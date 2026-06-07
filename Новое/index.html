@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Медицинский центр «Здоровье» — запись к врачу онлайн</title>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --cyan: #0ea5e9;
+      --green: #16a34a;
+      --green-dark: #15803d;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --bg: #f4f7fb;
+      --card-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    /* ---------- Navbar ---------- */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--blue);
+    }
+
+    .brand .logo {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      color: #fff;
+      font-size: 20px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--ink);
+      font-weight: 600;
+      font-size: 15px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--blue);
+    }
+
+    .nav-phone {
+      font-weight: 700;
+      color: var(--green);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    /* ---------- Header / Hero ---------- */
+    header {
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      color: white;
+      padding: 60px 20px 70px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 38px;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+
+    header p.lead {
+      font-size: 18px;
+      max-width: 760px;
+      margin: 0 auto 28px;
+      opacity: 0.95;
+    }
+
+    .search-box {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      font-size: 16px;
+      outline: none;
+      color: var(--ink);
+      border-radius: 8px;
+    }
+
+    .search-box button {
+      padding: 15px 22px;
+      border: none;
+      background: var(--green);
+      color: white;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-box button:hover {
+      background: var(--green-dark);
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .hint b {
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .symptom-result {
+      display: none;
+      max-width: 720px;
+      margin: 20px auto 0;
+      background: #ffffff;
+      color: var(--ink);
+      border-left: 5px solid var(--green);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: left;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .symptom-result h3 {
+      color: var(--green-dark);
+      margin-bottom: 8px;
+    }
+
+    .symptom-result button {
+      margin-top: 14px;
+      padding: 10px 18px;
+      border: none;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .symptom-result button:hover { background: var(--blue-dark); }
+
+    .symptom-result.not-found {
+      border-left-color: #f59e0b;
+    }
+
+    /* ---------- Layout ---------- */
+    main {
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    section {
+      margin-bottom: 64px;
+      scroll-margin-top: 80px;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .section-sub {
+      color: var(--muted);
+      margin-bottom: 24px;
+      max-width: 760px;
+    }
+
+    .info-block {
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .tag {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px 6px 4px 0;
+    }
+
+    /* ---------- Doctor cards ---------- */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .doctor-card {
+      background: white;
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.25s, box-shadow 0.25s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .doctor-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    }
+
+    .doctor-card h3 {
+      color: var(--blue);
+      margin-bottom: 4px;
+      font-size: 22px;
+    }
+
+    .specialty {
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 12px;
+    }
+
+    .doctor-card p.desc {
+      color: #374151;
+      flex: 1;
+    }
+
+    .doctor-card ul {
+      margin: 12px 0 18px 20px;
+      color: #374151;
+    }
+
+    .price {
+      background: #eff6ff;
+      padding: 12px;
+      border-radius: 10px;
+      margin: 12px 0;
+      font-weight: 700;
+      color: #1e3a8a;
+    }
+
+    /* ---- Современная шапка карточки врача ---- */
+    .doc-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .doc-avatar {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+    }
+
+    .doc-head-text h3 { margin-bottom: 2px; }
+    .doc-head-text .specialty { margin-bottom: 0; }
+
+    /* ---- Плашки цены и длительности ---- */
+    .doc-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0f7ff;
+      color: #1e3a8a;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+    }
+
+    .meta-ico { font-size: 15px; }
+
+    /* ---- Кнопка перехода на страницу врачей ---- */
+    .doctors-cta { text-align: center; padding: 12px 0; }
+    .cta-btn {
+      display: inline-block;
+      text-decoration: none;
+      padding: 16px 32px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--cyan), var(--blue));
+      border-radius: 12px;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.36);
+    }
+
+    /* ---- Новостная лента ---- */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 22px;
+    }
+    .news-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: var(--card-shadow);
+      border-left: 6px solid #cbd5e1;
+      display: flex;
+      flex-direction: column;
+    }
+    .news-card.level-high { border-left-color: #ef4444; }
+    .news-card.level-medium { border-left-color: #f59e0b; }
+    .news-card.level-low { border-left-color: #22c55e; }
+    .news-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .news-ico { font-size: 22px; }
+    .news-tag { font-weight: 700; font-size: 13px; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #334155; }
+    .news-date { margin-left: auto; color: #94a3b8; font-size: 13px; }
+    .news-card h3 { color: #111827; font-size: 18px; margin-bottom: 6px; }
+    .news-card p { color: #374151; flex: 1; }
+    .news-btn {
+      margin-top: 14px;
+      align-self: flex-start;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .news-btn:hover { background: var(--blue-dark); }
+
+    .doctor-card button,
+    .appointment-form button {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      background: var(--blue);
+      color: white;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .doctor-card button:hover,
+    .appointment-form button:hover {
+      background: var(--blue-dark);
+    }
+
+    /* ---------- Services table ---------- */
+    .table-tools {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .table-tools input,
+    .table-tools select {
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .table-tools input { flex: 1; min-width: 220px; }
+    .table-tools input:focus,
+    .table-tools select:focus { border-color: var(--blue); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      min-width: 640px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      background: var(--blue);
+      color: white;
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: #f0f7ff;
+    }
+
+    td.num { text-align: right; white-space: nowrap; }
+
+    .table-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+    }
+
+    .book-link {
+      background: none;
+      border: 1px solid var(--blue);
+      color: var(--blue);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.2s;
+    }
+
+    .book-link:hover { background: var(--blue); color: #fff; }
+
+    /* ---------- Appointment form ---------- */
+    .appointment-wrap {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 30px;
+      align-items: start;
+    }
+
+    .appointment-form {
+      background: white;
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .appointment-form label {
+      display: block;
+      margin-top: 16px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .appointment-form input,
+    .appointment-form select,
+    .appointment-form textarea {
+      width: 100%;
+      padding: 13px;
+      margin-top: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .appointment-form input:focus,
+    .appointment-form select:focus,
+    .appointment-form textarea:focus {
+      border-color: var(--blue);
+    }
+
+    .appointment-form input.invalid {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+
+    .appointment-form textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .appointment-form button {
+      margin-top: 22px;
+    }
+
+    .error-text {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 4px;
+      display: none;
+    }
+
+    .success-message {
+      display: none;
+      margin-top: 20px;
+      padding: 18px;
+      background: #dcfce7;
+      border-radius: 12px;
+      color: #166534;
+      font-weight: 600;
+      border-left: 5px solid var(--green);
+    }
+
+    .contact-card {
+      background: white;
+      padding: 28px;
+      border-radius: 18px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .contact-card h3 { margin-bottom: 12px; color: #111827; }
+    .contact-card p { margin-bottom: 10px; color: #374151; }
+    .contact-card .ico { color: var(--blue); font-weight: 700; }
+
+    /* ---------- Footer ---------- */
+    footer {
+      background: #111827;
+      color: #e5e7eb;
+      text-align: center;
+      padding: 40px 20px;
+      margin-top: 60px;
+    }
+
+    footer a { color: #93c5fd; text-decoration: none; }
+    footer .small { color: #9ca3af; font-size: 14px; margin-top: 10px; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 860px) {
+      .appointment-wrap { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      header h1 { font-size: 28px; }
+      .search-box { flex-direction: column; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== Navbar ===== -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <span class="logo">✚</span>
+      <span>Клиника «Здоровье»</span>
+    </div>
+    <div class="nav-links">
+      <a href="#about">О нас</a>
+      <a href="doctors.html">Врачи</a>
+      <a href="services.html">Услуги и цены</a>
+      <a href="#news">Важно знать</a>
+      <a href="#appointment">Запись</a>
+    </div>
+    <a class="nav-phone" href="tel:+78001234567">📞 8 800 123-45-67</a>
+  </div>
+</nav>
+
+<!-- ===== Hero ===== -->
+<header>
+  <h1>Медицинский центр «Здоровье»</h1>
+  <p class="lead">
+    Найдите врача по симптомам, заболеванию или специализации.
+    Узнайте стоимость приёма и запишитесь онлайн за пару минут.
+  </p>
+
+  <div class="search-box">
+    <input
+      type="text"
+      id="symptomInput"
+      placeholder="Опишите, что беспокоит: «уже три дня кашель и температура»..."
+      onkeydown="if(event.key==='Enter') searchDisease()"
+    />
+    <button onclick="searchDisease()">Найти врача</button>
+  </div>
+
+  <p class="hint">
+    Популярное:
+    <b onclick="quickSearch('зуб')">зубная боль</b> ·
+    <b onclick="quickSearch('горло')">больное горло</b> ·
+    <b onclick="quickSearch('давление')">давление</b> ·
+    <b onclick="quickSearch('зрение')">зрение</b> ·
+    <b onclick="quickSearch('кожа')">кожа</b>
+  </p>
+
+  <div id="symptomResult" class="symptom-result"></div>
+</header>
+
+<main>
+
+  <!-- ===== About ===== -->
+  <section id="about">
+    <h2>Почему пациенты выбирают нас</h2>
+    <p class="section-sub">
+      Мы помогаем быстро понять, к какому специалисту обратиться: найдите врача по симптому,
+      посмотрите услуги, цены и длительность приёма — и сразу оставьте заявку.
+    </p>
+    <div class="info-block">
+      <span class="tag">Онлайн-запись</span>
+      <span class="tag">Поиск по симптомам</span>
+      <span class="tag">Прозрачные цены</span>
+      <span class="tag">30+ специалистов</span>
+      <span class="tag">Современная диагностика</span>
+      <span class="tag">Быстрая консультация</span>
+    </div>
+  </section>
+
+  <!-- ===== Doctors ===== -->
+  <section id="doctors">
+    <h2>Наши врачи</h2>
+    <p class="section-sub">Более 20 опытных специалистов ведущих направлений. Откройте полный список, выберите врача и запишитесь онлайн.</p>
+    <div class="doctors-cta">
+      <a class="cta-btn" href="doctors.html">👨‍⚕️ Посмотреть всех врачей →</a>
+    </div>
+  </section>
+
+  <!-- ===== News / Alerts ===== -->
+  <section id="news">
+    <h2>Важно знать сейчас</h2>
+    <p class="section-sub">Актуальные предупреждения для пациентов: сезонные опасности, вспышки заболеваний и карантины. Берегите себя и близких.</p>
+
+    <div class="news-grid" id="newsGrid"><!-- заполняется из JS --></div>
+
+    <div class="doctors-cta" style="margin-top: 12px;">
+      <a class="cta-btn" href="services.html">📋 Все услуги и цены →</a>
+    </div>
+  </section>
+
+  <!-- ===== Appointment ===== -->
+  <section id="appointment">
+    <h2>Запись на приём</h2>
+    <p class="section-sub">Заполните форму — администратор перезвонит, чтобы подтвердить дату и время.</p>
+
+    <div class="appointment-wrap">
+      <form class="appointment-form" id="appointmentForm" novalidate onsubmit="submitAppointment(event)">
+        <label for="fullName">Ваше имя *</label>
+        <input type="text" id="fullName" placeholder="Иван Иванов" />
+        <div class="error-text" id="err-fullName">Введите имя</div>
+
+        <label for="phone">Телефон *</label>
+        <input type="tel" id="phone" placeholder="+7 (___) ___-__-__" />
+        <div class="error-text" id="err-phone">Введите корректный номер телефона</div>
+
+        <label for="doctorSelect">Врач / направление *</label>
+        <select id="doctorSelect">
+          <option value="">— Выберите специалиста —</option>
+        </select>
+        <div class="error-text" id="err-doctorSelect">Выберите специалиста</div>
+
+        <label for="date">Желаемая дата</label>
+        <input type="date" id="date" />
+
+        <label for="comment">Комментарий</label>
+        <textarea id="comment" placeholder="Опишите симптомы или пожелания (необязательно)"></textarea>
+
+        <button type="submit">Записаться на приём</button>
+
+        <div class="success-message" id="successMessage"></div>
+      </form>
+
+      <aside class="contact-card">
+        <h3>Контакты</h3>
+        <p><span class="ico">📍</span> г. Москва, ул. Здоровья, д. 1</p>
+        <p><span class="ico">📞</span> <a href="tel:+78001234567" style="color:inherit;text-decoration:none;">8 800 123-45-67</a></p>
+        <p><span class="ico">✉️</span> info@zdorovie-clinic.ru</p>
+        <p><span class="ico">🕒</span> Пн–Вс: 8:00 – 21:00</p>
+        <p style="color:var(--muted);font-size:14px;margin-top:16px;">
+          Приём ведётся по предварительной записи. Если не дозвонились — мы перезвоним в течение 15 минут.
+        </p>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== Footer ===== -->
+<footer>
+  <div class="brand" style="justify-content:center;color:#fff;">
+    <span class="logo">✚</span>
+    <span>Клиника «Здоровье»</span>
+  </div>
+  <p class="small">© 2026 Медицинский центр «Здоровье». Все права защищены.</p>
+  <p class="small">Имеются противопоказания. Необходима консультация специалиста.</p>
+</footer>
+
+<!-- Библиотека Supabase (для связи с базой данных) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+/* ====== Подключение к Supabase ======
+   URL и publishable key — публичные, их можно держать в коде.
+   Доступ к данным ограничен правилами RLS на стороне базы. */
+const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
+const SUPABASE_KEY = "sb_publishable_i_LZdRnHXMYNFf608V86GA_ohVuGfAH";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ====== Данные услуг: запасной список (если база вдруг недоступна) ====== */
+let services = [
+  { spec: "Стоматолог",    doctor: "Иванов И.И.",     name: "Консультация стоматолога", min: 30, price: 3000 },
+  { spec: "Стоматолог",    doctor: "Иванов И.И.",     name: "Чистка зубов",             min: 20, price: 5000 },
+  { spec: "Стоматолог",    doctor: "Иванов И.И.",     name: "Пломбирование",            min: 30, price: 5000 },
+  { spec: "Стоматолог",    doctor: "Иванов И.И.",     name: "Полное лечение зуба",      min: 40, price: 10000 },
+  { spec: "Стоматолог",    doctor: "Иванов И.И.",     name: "Удаление зуба",            min: 15, price: 3000 },
+  { spec: "ЛОР",           doctor: "Петров П.П.",     name: "Осмотр ЛОР-врача",         min: 20, price: 2500 },
+  { spec: "Терапевт",      doctor: "Сидорова А.А.",   name: "Первичная консультация",   min: 30, price: 2000 },
+  { spec: "Терапевт",      doctor: "Сидорова А.А.",   name: "Открыть больничный",       min: 10, price: 5000 },
+  { spec: "Терапевт",      doctor: "Ушакова Е.С.",    name: "Первичная консультация",   min: 30, price: 2000 },
+  { spec: "Терапевт",      doctor: "Ушакова Е.С.",    name: "Открыть больничный",       min: 10, price: 5000 },
+  { spec: "Окулист",       doctor: "Смирнова Е.В.",   name: "Проверка зрения",          min: 30, price: 2500 },
+  { spec: "Психиатр",      doctor: "Авдеев В.Г.",     name: "Осмотр психиатра",         min: 20, price: 2500 },
+  { spec: "Хирург",        doctor: "Григорьев А.С.",  name: "Осмотр хирурга",           min: 20, price: 3000 },
+  { spec: "МРТ",           doctor: "Афанасьев С.Н.",  name: "Прохождение МРТ",          min: 30, price: 7000 },
+  { spec: "Кардиолог",     doctor: "Лобанов Л.В.",    name: "ЭКГ",                      min: 20, price: 5000 },
+  { spec: "Дерматолог",    doctor: "Швецова О.Ю.",    name: "Осмотр дерматолога",       min: 20, price: 5000 },
+  { spec: "Проктолог",     doctor: "Романенко А.В.",  name: "Осмотр проктолога",        min: 20, price: 10000 },
+  { spec: "Эндокринолог",  doctor: "—",               name: "Осмотр эндокринолога",     min: 20, price: 7000 },
+  { spec: "Уролог",        doctor: "—",               name: "Осмотр уролога",           min: 20, price: 5000 },
+  { spec: "Сурдолог",      doctor: "—",               name: "Проверка слуха",           min: 30, price: 5000 },
+  { spec: "Гинеколог",     doctor: "—",               name: "Осмотр гинеколога",        min: 30, price: 5000 },
+  { spec: "Ревматолог",    doctor: "—",               name: "Осмотр ревматолога",       min: 20, price: 7000 },
+  { spec: "Нейрохирург",   doctor: "—",               name: "Консультация нейрохирурга", min: 40, price: 15000 },
+  { spec: "Маммолог",      doctor: "—",               name: "Осмотр маммолога",         min: 20, price: 8000 },
+  { spec: "Невролог",      doctor: "—",               name: "Осмотр невролога",         min: 30, price: 8000 },
+  { spec: "Пульмонолог",   doctor: "—",               name: "Осмотр пульмонолога",      min: 20, price: 5000 },
+  { spec: "Фтизиатр",      doctor: "—",               name: "Осмотр фтизиатра",         min: 20, price: 7000 },
+  { spec: "Рентгенолог",   doctor: "—",               name: "Рентгенография",           min: 15, price: 10000 },
+  { spec: "Эндоскопист",   doctor: "—",               name: "Эндоскопия",               min: 30, price: 6000 }
+];
+
+/* ====== Врачи: запасной список (основные грузятся из Supabase) ====== */
+let doctors = [
+  {
+    name: "Иванов И.И.", spec: "Стоматолог",
+    desc: "Диагностика, профилактика и лечение зубов и дёсен: боль, кариес, воспаление, чистка и удаление зуба.",
+    items: ["Консультация", "Чистка зубов", "Пломбирование", "Лечение и удаление зуба"],
+    price: "от 3000 ₽ · 15–40 мин"
+  },
+  {
+    name: "Петров П.П.", spec: "ЛОР",
+    desc: "Заболевания уха, горла и носа: боль в горле, насморк, заложенность, снижение слуха, отит, синусит.",
+    items: ["Осмотр ЛОР-врача", "Диагностика носоглотки", "Помощь при боли в ухе и горле"],
+    price: "2500 ₽ · 20 мин"
+  },
+  {
+    name: "Сидорова А.А.", spec: "Терапевт",
+    desc: "Первый врач при общем недомогании: температура, слабость, кашель, давление, боль в животе, простуда.",
+    items: ["Первичная консультация", "Больничный лист", "Направление к специалистам"],
+    price: "от 2000 ₽ · 10–30 мин"
+  },
+  {
+    name: "Смирнова Е.В.", spec: "Окулист",
+    desc: "Проверка зрения и диагностика заболеваний глаз: сухость, покраснение, усталость, подозрение на глаукому.",
+    items: ["Проверка зрения", "Диагностика заболеваний глаз", "Рекомендации"],
+    price: "2500 ₽ · 30 мин"
+  },
+  {
+    name: "Авдеев В.Г.", spec: "Психиатр",
+    desc: "Тревога, депрессия, панические атаки, нарушения сна, выгорание, перепады настроения.",
+    items: ["Осмотр психиатра", "Диагностика состояния", "Назначение лечения"],
+    price: "2500 ₽ · 20 мин"
+  },
+  {
+    name: "Григорьев А.С.", spec: "Хирург",
+    desc: "Травмы, раны, воспаления, гнойные процессы, боли после ушибов, малые хирургические процедуры.",
+    items: ["Осмотр хирурга", "Оценка травм и воспалений", "Рекомендации по лечению"],
+    price: "3000 ₽ · 20 мин"
+  },
+  {
+    name: "Афанасьев С.Н.", spec: "МРТ",
+    desc: "Магнитно-резонансная томография позвоночника, суставов, головного мозга, внутренних органов.",
+    items: ["Прохождение МРТ", "Диагностическое обследование", "Помощь при болях в спине и суставах"],
+    price: "7000 ₽ · 30 мин"
+  },
+  {
+    name: "Лобанов Л.В.", spec: "Кардиолог",
+    desc: "Заболевания сердца и сосудов: боль в груди, одышка, давление, аритмия, учащённое сердцебиение.",
+    items: ["ЭКГ", "Диагностика сердечного ритма", "Оценка рисков"],
+    price: "5000 ₽ · 20 мин"
+  },
+  {
+    name: "Швецова О.Ю.", spec: "Дерматолог",
+    desc: "Заболевания кожи: высыпания, зуд, покраснение, акне, родинки, аллергические реакции.",
+    items: ["Осмотр дерматолога", "Диагностика кожи", "План лечения"],
+    price: "5000 ₽ · 20 мин"
+  },
+  {
+    name: "Романенко А.В.", spec: "Проктолог",
+    desc: "Диагностика и лечение заболеваний кишечника и прямой кишки.",
+    items: ["Осмотр проктолога", "Диагностика", "Рекомендации по лечению"],
+    price: "10000 ₽ · 20 мин"
+  }
+];
+
+/* ====== Поиск по симптомам ====== */
+const symptomMap = [
+  { spec: "Стоматолог",  keys: ["зуб", "зубы", "десна", "дёсна", "кариес", "пломб", "рот"] },
+  { spec: "ЛОР",         keys: ["горло", "нос", "ухо", "уши", "насморк", "отит", "слух", "гайморит", "ангина", "заложен"] },
+  { spec: "Терапевт",    keys: ["температур", "слабость", "простуд", "орви", "грипп", "кашель", "недомог", "живот", "озноб"] },
+  { spec: "Окулист",     keys: ["зрение", "глаз", "глаза", "близорук", "дальнозор", "катаракт", "глауком"] },
+  { spec: "Психиатр",    keys: ["тревог", "депресс", "паник", "сон", "бессонниц", "настроен", "выгоран", "стресс", "паническ"] },
+  { spec: "Хирург",      keys: ["травма", "рана", "ушиб", "воспал", "гной", "нарыв", "порез"] },
+  { spec: "Кардиолог",   keys: ["сердц", "давлен", "одышк", "аритм", "грудь", "пульс", "сердцебиен"] },
+  { spec: "Дерматолог",  keys: ["кожа", "кожи", "сыпь", "зуд", "родинк", "акне", "прыщ", "аллерг", "экзем"] },
+  { spec: "Невролог",    keys: ["голов", "мигрень", "невралг", "онемен", "защемлен", "невроз"] },
+  { spec: "МРТ",         keys: ["мрт", "спина", "позвоночник", "сустав", "колено", "томограф"] },
+  { spec: "Эндокринолог",keys: ["гормон", "щитовид", "сахар", "диабет", "вес", "обмен веществ"] },
+  { spec: "Уролог",      keys: ["мочев", "почк", "уролог", "простат"] },
+  { spec: "Гинеколог",   keys: ["гинеколог", "женск", "беремен", "цикл"] },
+  { spec: "Пульмонолог", keys: ["лёгк", "легк", "дыхан", "бронх", "астма"] }
+];
+
+/* Адрес нашей Edge Function (ИИ-посредник) */
+const SYMPTOM_FN_URL = SUPABASE_URL + "/functions/v1/symptom-search";
+
+const urgencyText = {
+  emergency: "⚠️ Похоже на срочную ситуацию. При острых симптомах звоните 103 (скорая помощь).",
+  soon: "🟠 Желательно обратиться к врачу в ближайшее время.",
+  routine: "🟢 Плановое обращение.",
+};
+
+/* Показ результата (общий и для ИИ, и для запасного поиска) */
+function showSymptomResult(spec, advice, urgency, byAI) {
+  const box = document.getElementById("symptomResult");
+  const finalSpec = spec || "Терапевт";
+  const doc = doctors.find(d => d.spec === finalSpec);
+
+  box.className = "symptom-result";
+  box.style.display = "block";
+
+  let html = "<h3>Рекомендуем: " + finalSpec + "</h3>";
+  if (advice) html += "<p>" + advice + "</p>";
+  if (urgency && urgencyText[urgency]) html += "<p><b>" + urgencyText[urgency] + "</b></p>";
+  if (doc) html += "<p style='color:#6b7280'>Например, принимает: <b>" + doc.name + "</b></p>";
+  html += '<button onclick="selectDoctor(\'' + finalSpec + '\')">Записаться к специалисту</button>';
+  html += '<p style="margin-top:14px;font-size:13px;color:#6b7280">'
+        + (byAI ? "Подсказал ИИ-помощник. " : "")
+        + "Это не диагноз — точную помощь окажет врач на приёме.</p>";
+  box.innerHTML = html;
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* Запасной поиск по ключевым словам (если ИИ недоступен) */
+function keywordSearch(raw) {
+  const match = symptomMap.find(m => m.keys.some(k => raw.includes(k)));
+  return match ? match.spec : "Терапевт";
+}
+
+async function searchDisease() {
+  const box = document.getElementById("symptomResult");
+  const raw = document.getElementById("symptomInput").value.trim();
+
+  if (!raw) {
+    box.className = "symptom-result not-found";
+    box.style.display = "block";
+    box.innerHTML = "<h3>Опишите, что вас беспокоит</h3><p>Например: «несколько дней болит горло и тяжело глотать».</p>";
+    return;
+  }
+
+  // индикатор загрузки
+  box.className = "symptom-result";
+  box.style.display = "block";
+  box.innerHTML = "<h3>🔎 Анализирую вашу жалобу…</h3><p>Секунду, подбираю подходящего специалиста.</p>";
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const specialties = [...new Set(services.map(s => s.spec))];
+
+  try {
+    const resp = await fetch(SYMPTOM_FN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+      },
+      body: JSON.stringify({ symptoms: raw, specialties }),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    showSymptomResult(data.specialty, data.advice, data.urgency, true);
+  } catch (e) {
+    console.warn("ИИ-поиск недоступен, использую запасной поиск:", e.message);
+    const spec = keywordSearch(raw.toLowerCase());
+    showSymptomResult(spec, "Подобрали специалиста по ключевым словам (умный ИИ-поиск пока недоступен).", "routine", false);
+  }
+}
+
+function quickSearch(term) {
+  document.getElementById("symptomInput").value = term;
+  searchDisease();
+}
+
+/* ====== Загрузка врачей из Supabase ====== */
+async function loadDoctorsFromDB() {
+  const { data, error } = await sb
+    .from("doctors")
+    .select("name, specialty, description")
+    .order("id");
+  if (error) {
+    console.warn("Не удалось загрузить врачей из Supabase, использую запасной список:", error.message);
+    return;
+  }
+  if (data && data.length) {
+    doctors = data.map(d => ({ name: d.name, spec: d.specialty, desc: d.description }));
+  }
+}
+
+/* ====== Вспомогательные расчёты по услугам врача ====== */
+function doctorStats(spec) {
+  const list = services.filter(s => s.spec === spec);
+  const prices = list.map(s => s.price).filter(p => p != null);
+  const durs = list.map(s => s.min).filter(d => d != null);
+  return {
+    items: [...new Set(list.map(s => s.name))],
+    priceMin: prices.length ? Math.min(...prices) : null,
+    priceMax: prices.length ? Math.max(...prices) : null,
+    durMin: durs.length ? Math.min(...durs) : null,
+    durMax: durs.length ? Math.max(...durs) : null,
+  };
+}
+
+function initials(name) {
+  return (name || "?").trim().charAt(0).toUpperCase();
+}
+
+function rangeText(min, max, suffix) {
+  if (min == null) return "уточняется";
+  return (min === max ? `${min}` : `${min}–${max}`) + suffix;
+}
+
+/* ====== Рендер карточек врачей (современные, из базы) ====== */
+function renderDoctors() {
+  const wrap = document.getElementById("doctorCards");
+  if (!wrap) return; // на главной карточек нет — они на отдельной странице doctors.html
+  wrap.innerHTML = doctors.map(d => {
+    const st = doctorStats(d.spec);
+    const priceText = st.priceMin == null
+      ? "уточняется"
+      : (st.priceMin === st.priceMax ? fmtPrice(st.priceMin) : "от " + fmtPrice(st.priceMin));
+    const durText = rangeText(st.durMin, st.durMax, " мин");
+    const items = st.items.slice(0, 5).map(i => `<li>${i}</li>`).join("");
+    return `
+    <div class="doctor-card">
+      <div class="doc-head">
+        <div class="doc-avatar">${initials(d.name)}</div>
+        <div class="doc-head-text">
+          <h3>${d.name}</h3>
+          <p class="specialty">${d.spec}</p>
+        </div>
+      </div>
+      <p class="desc">${d.desc || ""}</p>
+      ${items ? `<ul>${items}</ul>` : ""}
+      <div class="doc-meta">
+        <span class="meta-pill"><span class="meta-ico">💳</span> ${priceText}</span>
+        <span class="meta-pill"><span class="meta-ico">⏱️</span> ${durText}</span>
+      </div>
+      <button onclick="selectDoctor('${d.spec}')">Записаться на приём</button>
+    </div>`;
+  }).join("");
+}
+
+/* ====== Рендер таблицы услуг ====== */
+function fmtPrice(p) {
+  return p.toLocaleString("ru-RU") + " ₽";
+}
+
+function fillFilters() {
+  const sel = document.getElementById("specialtyFilter");
+  [...new Set(services.map(s => s.spec))].sort((a, b) => a.localeCompare(b, "ru"))
+    .forEach(spec => {
+      const opt = document.createElement("option");
+      opt.value = spec;
+      opt.textContent = spec;
+      sel.appendChild(opt);
+    });
+}
+
+function renderTable() {
+  const q = document.getElementById("serviceSearch").value.trim().toLowerCase();
+  const spec = document.getElementById("specialtyFilter").value;
+  const body = document.getElementById("servicesBody");
+
+  const rows = services.filter(s => {
+    const matchSpec = !spec || s.spec === spec;
+    const matchText = !q ||
+      s.name.toLowerCase().includes(q) ||
+      s.spec.toLowerCase().includes(q) ||
+      s.doctor.toLowerCase().includes(q);
+    return matchSpec && matchText;
+  });
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="6" class="table-empty">Ничего не найдено. Попробуйте изменить запрос.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map(s => `
+    <tr>
+      <td>${s.spec}</td>
+      <td>${s.name}</td>
+      <td>${s.doctor}</td>
+      <td class="num">${s.min} мин</td>
+      <td class="num">${fmtPrice(s.price)}</td>
+      <td><button class="book-link" onclick="selectDoctor('${s.spec}')">Записаться</button></td>
+    </tr>
+  `).join("");
+}
+
+/* ====== Заполнение select врачей в форме ====== */
+function fillDoctorSelect() {
+  const sel = document.getElementById("doctorSelect");
+  [...new Set(services.map(s => s.spec))].sort((a, b) => a.localeCompare(b, "ru"))
+    .forEach(spec => {
+      const doc = doctors.find(d => d.spec === spec);
+      const opt = document.createElement("option");
+      opt.value = spec;
+      opt.textContent = doc ? `${spec} — ${doc.name}` : spec;
+      sel.appendChild(opt);
+    });
+}
+
+/* ====== Выбор врача → прокрутка к форме ====== */
+function selectDoctor(spec) {
+  const sel = document.getElementById("doctorSelect");
+  sel.value = spec;
+  document.getElementById("appointment").scrollIntoView({ behavior: "smooth" });
+  sel.classList.remove("invalid");
+  document.getElementById("err-doctorSelect").style.display = "none";
+}
+
+/* ====== Отправка формы записи ====== */
+async function submitAppointment(e) {
+  e.preventDefault();
+
+  const name = document.getElementById("fullName");
+  const phone = document.getElementById("phone");
+  const doctor = document.getElementById("doctorSelect");
+  const success = document.getElementById("successMessage");
+
+  let ok = true;
+
+  function setError(field, errId, condition) {
+    const err = document.getElementById(errId);
+    if (condition) {
+      field.classList.add("invalid");
+      err.style.display = "block";
+      ok = false;
+    } else {
+      field.classList.remove("invalid");
+      err.style.display = "none";
+    }
+  }
+
+  const digits = phone.value.replace(/\D/g, "");
+  setError(name, "err-fullName", name.value.trim().length < 2);
+  setError(phone, "err-phone", digits.length < 10);
+  setError(doctor, "err-doctorSelect", !doctor.value);
+
+  if (!ok) {
+    success.style.display = "none";
+    return;
+  }
+
+  const date = document.getElementById("date").value;
+  const comment = document.getElementById("comment").value.trim();
+
+  // Сохраняем заявку в таблицу appointments в Supabase
+  const { error } = await sb.from("appointments").insert({
+    full_name: name.value.trim(),
+    phone: phone.value.trim(),
+    specialty: doctor.value,
+    preferred_date: date || null,
+    comment: comment || null
+  });
+
+  if (error) {
+    success.style.display = "block";
+    success.style.background = "#fee2e2";
+    success.style.color = "#991b1b";
+    success.style.borderLeftColor = "#ef4444";
+    success.innerHTML = "⚠️ Не удалось сохранить заявку: " + error.message + ". Попробуйте ещё раз.";
+    return;
+  }
+
+  // успех — на всякий случай возвращаем зелёное оформление
+  success.style.background = "#dcfce7";
+  success.style.color = "#166534";
+  success.style.borderLeftColor = "var(--green)";
+  success.style.display = "block";
+  success.innerHTML =
+    "✅ Спасибо, " + name.value.trim() + "! Ваша заявка к специалисту «" + doctor.value + "» принята." +
+    (date ? " Желаемая дата: " + new Date(date).toLocaleDateString("ru-RU") + "." : "") +
+    " Мы перезвоним для подтверждения.";
+
+  document.getElementById("appointmentForm").reset();
+  success.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ====== Загрузка услуг из Supabase ====== */
+async function loadServicesFromDB() {
+  const { data, error } = await sb
+    .from("services")
+    .select("specialty, name, doctor, duration_min, price")
+    .order("id");
+
+  if (error) {
+    console.warn("Не удалось загрузить услуги из Supabase, использую запасной список:", error.message);
+    return;
+  }
+  if (data && data.length) {
+    // приводим имена колонок базы к тем, что использует код (spec, min)
+    services = data.map(r => ({
+      spec: r.specialty,
+      name: r.name,
+      doctor: r.doctor,
+      min: r.duration_min,
+      price: r.price
+    }));
+  }
+}
+
+/* ====== Инициализация ====== */
+/* ====== Новостная лента (предупреждения для пациентов) ======
+   Чтобы изменить новости — просто отредактируй этот список. */
+const news = [
+  {
+    level: "high", icon: "🌿", tag: "Пыльца", date: "7 июня",
+    title: "Высокий уровень пыльцы",
+    text: "Активно цветут злаковые травы. Аллергикам лучше ограничить прогулки утром, держать окна закрытыми и принимать назначенные препараты.",
+    spec: "Терапевт"
+  },
+  {
+    level: "medium", icon: "🤧", tag: "Аллергия", date: "5 июня",
+    title: "Сезон поллиноза в разгаре",
+    text: "Зуд в глазах, насморк и чихание без признаков простуды — частые проявления аллергии. Поможем подобрать лечение на приёме.",
+    spec: "Дерматолог"
+  },
+  {
+    level: "high", icon: "🦠", tag: "Карантин", date: "3 июня",
+    title: "Карантин по ОРВИ в школах района",
+    text: "В нескольких школах введён карантин. При температуре и кашле у ребёнка оставьте его дома и вызовите врача — не ведите в сад или школу.",
+    spec: "Терапевт"
+  },
+  {
+    level: "medium", icon: "☀️", tag: "Жара", date: "1 июня",
+    title: "Жара: берегите сердце и сосуды",
+    text: "В жаркие дни пейте больше воды и избегайте нагрузок в полдень. При повышенном давлении, одышке и слабости обратитесь к кардиологу.",
+    spec: "Кардиолог"
+  },
+  {
+    level: "low", icon: "🌲", tag: "Клещи", date: "28 мая",
+    title: "Сезон активности клещей",
+    text: "Планируете выезды на природу? Узнайте о прививке от клещевого энцефалита и обязательно осматривайте кожу после прогулок.",
+    spec: "Терапевт"
+  },
+];
+
+function renderNews() {
+  const wrap = document.getElementById("newsGrid");
+  if (!wrap) return;
+  wrap.innerHTML = news.map(n => {
+    const btn = n.spec
+      ? `<button class="news-btn" onclick="selectDoctor('${n.spec}')">Записаться: ${n.spec}</button>`
+      : "";
+    return `
+    <article class="news-card level-${n.level}">
+      <div class="news-top">
+        <span class="news-ico">${n.icon}</span>
+        <span class="news-tag">${n.tag}</span>
+        <span class="news-date">${n.date}</span>
+      </div>
+      <h3>${n.title}</h3>
+      <p>${n.text}</p>
+      ${btn}
+    </article>`;
+  }).join("");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  renderNews();
+  // данные из базы нужны для формы записи и ИИ-поиска
+  await Promise.all([loadServicesFromDB(), loadDoctorsFromDB()]);
+  renderDoctors();      // на главной карточек нет — функция сама ничего не делает
+  fillDoctorSelect();
+  // запрет выбора прошедшей даты
+  document.getElementById("date").min = new Date().toISOString().split("T")[0];
+
+  // если пришли со страницы врачей/услуг с выбранным специалистом (index.html?spec=...)
+  const spec = new URLSearchParams(location.search).get("spec");
+  if (spec) selectDoctor(spec);
+});
+</script>
+
+</body>
+</html>

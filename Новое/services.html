@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Услуги и цены — Медицинский центр «Здоровье»</title>
+  <style>
+    :root {
+      --blue: #2563eb; --blue-dark: #1d4ed8; --cyan: #0ea5e9;
+      --ink: #1f2937; --muted: #6b7280; --bg: #f4f7fb;
+      --card-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg); color: var(--ink); line-height: 1.6;
+    }
+    .nav { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #e5e7eb; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; color: var(--blue); }
+    .brand .logo { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #fff; font-size: 20px; }
+    .back-link { text-decoration: none; color: var(--blue); font-weight: 600; }
+    .back-link:hover { text-decoration: underline; }
+
+    header { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff; padding: 44px 20px; text-align: center; }
+    header h1 { font-size: 32px; margin-bottom: 10px; }
+    header p { opacity: 0.95; max-width: 660px; margin: 0 auto; }
+
+    .tools { max-width: 1200px; margin: 26px auto 0; padding: 0 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .tools input, .tools select { padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 15px; outline: none; }
+    .tools input { flex: 1; min-width: 220px; }
+    .tools input:focus, .tools select:focus { border-color: var(--blue); }
+
+    main { max-width: 1200px; margin: 24px auto 60px; padding: 0 20px; }
+    .count { color: var(--muted); margin-bottom: 18px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 22px; }
+
+    .service-card {
+      background: #fff; padding: 22px; border-radius: 16px; box-shadow: var(--card-shadow);
+      display: flex; flex-direction: column; transition: transform .2s, box-shadow .2s;
+    }
+    .service-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(15,23,42,.14); }
+    .svc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .svc-spec { font-weight: 700; font-size: 13px; padding: 5px 12px; border-radius: 999px; background: #e0f2fe; color: #0369a1; }
+    .svc-price { font-weight: 800; font-size: 18px; color: #1e3a8a; white-space: nowrap; }
+    .service-card h3 { font-size: 18px; color: #111827; margin-bottom: 6px; }
+    .svc-doctor { color: #374151; font-size: 14px; }
+    .svc-meta { margin: 12px 0 16px; }
+    .meta-pill { display: inline-flex; align-items: center; gap: 6px; background: #f0f7ff; color: #1e3a8a; font-weight: 700; font-size: 14px; padding: 7px 13px; border-radius: 999px; }
+    .service-card a.book { margin-top: auto; text-align: center; text-decoration: none; padding: 12px; background: var(--blue); color: #fff; border-radius: 10px; font-size: 15px; font-weight: 600; transition: background .2s; }
+    .service-card a.book:hover { background: var(--blue-dark); }
+    .loading, .empty { text-align: center; color: var(--muted); padding: 40px; grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="logo">✚</span><span>Клиника «Здоровье»</span></div>
+      <a class="back-link" href="index.html">← На главную</a>
+    </div>
+  </nav>
+
+  <header>
+    <h1>Услуги и цены</h1>
+    <p>Полный перечень услуг клиники: что входит, к какому врачу, сколько длится и сколько стоит. Найдите нужную услугу и запишитесь онлайн.</p>
+  </header>
+
+  <div class="tools">
+    <input type="text" id="search" placeholder="Поиск услуги, направления или врача..." oninput="renderServices()" />
+    <select id="specFilter" onchange="renderServices()">
+      <option value="">Все направления</option>
+    </select>
+  </div>
+
+  <main>
+    <p class="count" id="count"></p>
+    <div class="cards" id="serviceCards"><p class="loading">Загружаем услуги…</p></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i_LZdRnHXMYNFf608V86GA_ohVuGfAH";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let services = [];
+
+    async function loadServices() {
+      const { data, error } = await sb
+        .from("services")
+        .select("specialty, name, doctor, duration_min, price")
+        .order("specialty");
+      if (!error && data) {
+        services = data.map(s => ({ spec: s.specialty, name: s.name, doctor: s.doctor, min: s.duration_min, price: s.price }));
+      }
+    }
+
+    function fmtPrice(p) { return p == null ? "уточняется" : p.toLocaleString("ru-RU") + " ₽"; }
+
+    function fillFilter() {
+      const sel = document.getElementById("specFilter");
+      [...new Set(services.map(s => s.spec))].sort((a,b)=>a.localeCompare(b,"ru"))
+        .forEach(spec => {
+          const o = document.createElement("option");
+          o.value = spec; o.textContent = spec; sel.appendChild(o);
+        });
+    }
+
+    function renderServices() {
+      const wrap = document.getElementById("serviceCards");
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const filterSpec = document.getElementById("specFilter").value;
+
+      const list = services.filter(s => {
+        const matchSpec = !filterSpec || s.spec === filterSpec;
+        const matchText = !q || s.name.toLowerCase().includes(q) || s.spec.toLowerCase().includes(q) || (s.doctor || "").toLowerCase().includes(q);
+        return matchSpec && matchText;
+      });
+
+      document.getElementById("count").textContent = `Найдено услуг: ${list.length}`;
+
+      if (!list.length) {
+        wrap.innerHTML = '<p class="empty">Ничего не найдено. Попробуйте изменить запрос.</p>';
+        return;
+      }
+
+      wrap.innerHTML = list.map(s => {
+        const doctor = s.doctor && s.doctor !== "—" ? `<p class="svc-doctor">👨‍⚕️ ${s.doctor}</p>` : "";
+        const dur = s.min != null ? `<div class="svc-meta"><span class="meta-pill">⏱️ ${s.min} мин</span></div>` : "";
+        const link = `index.html?spec=${encodeURIComponent(s.spec)}#appointment`;
+        return `
+        <div class="service-card">
+          <div class="svc-top">
+            <span class="svc-spec">${s.spec}</span>
+            <span class="svc-price">${fmtPrice(s.price)}</span>
+          </div>
+          <h3>${s.name}</h3>
+          ${doctor}
+          ${dur}
+          <a class="book" href="${link}">Записаться</a>
+        </div>`;
+      }).join("");
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadServices();
+      fillFilter();
+      renderServices();
+    });
+  </script>
+</body>
+</html>
