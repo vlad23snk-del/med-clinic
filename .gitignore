@@ -5,6 +5,8 @@
 .env
 .env.local
 *.key
+Ключ
+Ключ.txt
 
 # Папки зависимостей
 node_modules/

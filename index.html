@@ -599,9 +599,20 @@
     }
 
     @media (max-width: 700px) {
-      header h1 { font-size: 28px; }
+      header { padding: 44px 16px 50px; }
+      header h1 { font-size: 26px; }
+      header p.lead { font-size: 16px; }
       .search-box { flex-direction: column; }
-      .nav-links { display: none; }
+      /* меню не прячем, а переносим и центрируем, чтобы оставалось доступным */
+      .nav-inner { justify-content: center; }
+      .nav-links { gap: 14px 18px; justify-content: center; width: 100%; order: 3; }
+      .nav-links a { font-size: 14px; }
+      .nav-phone { font-size: 14px; }
+      h2 { font-size: 23px; }
+      main { margin: 30px auto; }
+      section { margin-bottom: 44px; }
+      .news-grid { grid-template-columns: 1fr; }
+      .cta-btn { width: 100%; }
     }
   </style>
 </head>
@@ -689,10 +700,6 @@
     <p class="section-sub">Актуальные предупреждения для пациентов: сезонные опасности, вспышки заболеваний и карантины. Берегите себя и близких.</p>
 
     <div class="news-grid" id="newsGrid"><!-- заполняется из JS --></div>
-
-    <div class="doctors-cta" style="margin-top: 12px;">
-      <a class="cta-btn" href="services.html">📋 Все услуги и цены →</a>
-    </div>
   </section>
 
   <!-- ===== Appointment ===== -->
@@ -1254,9 +1261,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   // запрет выбора прошедшей даты
   document.getElementById("date").min = new Date().toISOString().split("T")[0];
 
-  // если пришли со страницы врачей/услуг с выбранным специалистом (index.html?spec=...)
-  const spec = new URLSearchParams(location.search).get("spec");
-  if (spec) selectDoctor(spec);
+  // если пришли со страницы врача/услуг с выбранным специалистом (index.html?spec=...&doctor=...&service=...)
+  const params = new URLSearchParams(location.search);
+  const spec = params.get("spec");
+  if (spec) {
+    selectDoctor(spec);
+    const service = params.get("service");
+    const doctor = params.get("doctor");
+    if (service || doctor) {
+      const c = document.getElementById("comment");
+      c.value = "Хочу записаться"
+        + (service ? " на услугу: «" + service + "»" : "")
+        + (doctor ? " к врачу " + doctor : "")
+        + ".";
+    }
+  }
 });
 </script>
 

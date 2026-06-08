@@ -69,14 +69,18 @@
     .doctor-card {
       background: #fff; padding: 24px; border-radius: 18px; box-shadow: var(--card-shadow);
       transition: transform .25s, box-shadow .25s; display: flex; flex-direction: column;
+      text-decoration: none; color: inherit; cursor: pointer;
     }
     .doctor-card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(15,23,42,.14); }
 
     .doc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
     .doc-avatar {
-      width: 52px; height: 52px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center;
+      width: 56px; height: 56px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center;
       font-size: 22px; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--cyan), var(--blue));
+      overflow: hidden;
     }
+    .doc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .more { margin-top: auto; color: var(--blue); font-weight: 700; font-size: 15px; }
     .doc-head h3 { color: var(--blue); font-size: 20px; margin-bottom: 2px; }
     .specialty { font-weight: 700; color: #111827; }
     .desc { color: #374151; flex: 1; }
@@ -93,6 +97,16 @@
     }
     .doctor-card a.book:hover { background: var(--blue-dark); }
     .loading, .empty { text-align: center; color: var(--muted); padding: 40px; grid-column: 1 / -1; }
+
+    /* ---- Телефон ---- */
+    @media (max-width: 600px) {
+      header { padding: 32px 16px; }
+      header h1 { font-size: 24px; }
+      .tools { flex-direction: column; }
+      .cards { grid-template-columns: 1fr; gap: 16px; }
+      .brand { font-size: 17px; }
+      main { margin: 18px auto 40px; }
+    }
   </style>
 </head>
 <body>
@@ -132,11 +146,11 @@
 
     async function loadData() {
       const [docRes, svcRes] = await Promise.all([
-        sb.from("doctors").select("name, specialty, description").order("id"),
+        sb.from("doctors").select("id, name, specialty, description, photo_url").order("id"),
         sb.from("services").select("specialty, name, duration_min, price").order("id"),
       ]);
       if (!docRes.error && docRes.data) {
-        doctors = docRes.data.map(d => ({ name: d.name, spec: d.specialty, desc: d.description }));
+        doctors = docRes.data.map(d => ({ id: d.id, name: d.name, spec: d.specialty, desc: d.description, photo: d.photo_url }));
       }
       if (!svcRes.error && svcRes.data) {
         services = svcRes.data.map(s => ({ spec: s.specialty, name: s.name, min: s.duration_min, price: s.price }));
@@ -194,12 +208,14 @@
         const priceText = st.priceMin == null ? "уточняется"
           : (st.priceMin === st.priceMax ? fmtPrice(st.priceMin) : "от " + fmtPrice(st.priceMin));
         const durText = rangeText(st.durMin, st.durMax, " мин");
-        const items = st.items.slice(0, 5).map(i => `<li>${i}</li>`).join("");
-        const link = `index.html?spec=${encodeURIComponent(d.spec)}#appointment`;
+        const items = st.items.slice(0, 4).map(i => `<li>${i}</li>`).join("");
+        const avatar = d.photo
+          ? `<div class="doc-avatar"><img src="${d.photo}" alt="${d.name}" loading="lazy"></div>`
+          : `<div class="doc-avatar">${initials(d.name)}</div>`;
         return `
-        <div class="doctor-card">
+        <a class="doctor-card" href="doctor.html?id=${d.id}">
           <div class="doc-head">
-            <div class="doc-avatar">${initials(d.name)}</div>
+            ${avatar}
             <div>
               <h3>${d.name}</h3>
               <p class="specialty">${d.spec}</p>
@@ -211,8 +227,8 @@
             <span class="meta-pill">💳 ${priceText}</span>
             <span class="meta-pill">⏱️ ${durText}</span>
           </div>
-          <a class="book" href="${link}">Записаться на приём</a>
-        </div>`;
+          <span class="more">Подробнее о враче →</span>
+        </a>`;
       }).join("");
     }
 
