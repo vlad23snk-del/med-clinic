@@ -365,6 +365,39 @@
       box-shadow: 0 12px 28px rgba(37, 99, 235, 0.36);
     }
 
+    /* ---- Кнопки Telegram в шапке ---- */
+    .tg-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .tg-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      padding: 14px 26px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 12px;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .tg-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .tg-btn.primary {
+      color: #fff;
+      background: linear-gradient(135deg, #2AABEE, #229ED9);
+      box-shadow: 0 8px 22px rgba(34, 158, 217, 0.45);
+    }
+    .tg-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(34, 158, 217, 0.55); }
+    .tg-btn.ghost {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1.5px solid rgba(255, 255, 255, 0.55);
+    }
+    .tg-btn.ghost:hover { background: rgba(255, 255, 255, 0.24); transform: translateY(-2px); }
+
     /* ---- Новостная лента ---- */
     .news-grid {
       display: grid;
@@ -613,6 +646,8 @@
       section { margin-bottom: 44px; }
       .news-grid { grid-template-columns: 1fr; }
       .cta-btn { width: 100%; }
+      .tg-actions { flex-direction: column; }
+      .tg-btn { width: 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -662,6 +697,17 @@
     <b onclick="quickSearch('зрение')">зрение</b> ·
     <b onclick="quickSearch('кожа')">кожа</b>
   </p>
+
+  <div class="tg-actions">
+    <a id="tgBook" class="tg-btn primary" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+      Записаться в Telegram
+    </a>
+    <a id="tgOpen" class="tg-btn ghost" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+      Перейти в Telegram
+    </a>
+  </div>
 
   <div id="symptomResult" class="symptom-result"></div>
 </header>
@@ -769,6 +815,11 @@
 const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
 const SUPABASE_KEY = "sb_publishable_i_LZdRnHXMYNFf608V86GA_ohVuGfAH";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ====== Telegram-бот ======
+   Имя бота для кнопок «Записаться/Перейти в Telegram» (без символа @).
+   Если поменяешь бота — впиши сюда новое имя. */
+const TELEGRAM_BOT = "Test_Nonuser_bot";
 
 /* ====== Данные услуг: запасной список (если база вдруг недоступна) ====== */
 let services = [
@@ -1166,7 +1217,10 @@ async function submitAppointment(e) {
   success.innerHTML =
     "✅ Спасибо, " + name.value.trim() + "! Ваша заявка к специалисту «" + doctor.value + "» принята." +
     (date ? " Желаемая дата: " + new Date(date).toLocaleDateString("ru-RU") + "." : "") +
-    " Мы перезвоним для подтверждения.";
+    " Мы перезвоним для подтверждения." +
+    "<br><br>💙 Чтобы получить <b>подтверждение и напоминания о приёме в Telegram</b>, " +
+    'откройте нашего бота тем же номером телефона: ' +
+    '<a href="https://t.me/' + TELEGRAM_BOT + '" target="_blank" rel="noopener" style="color:#229ED9;font-weight:700;">перейти в Telegram →</a>';
 
   document.getElementById("appointmentForm").reset();
   success.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1254,6 +1308,13 @@ function renderNews() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   renderNews();
+
+  // ссылки кнопок Telegram (формируются из имени бота TELEGRAM_BOT)
+  const tgBook = document.getElementById("tgBook");
+  const tgOpen = document.getElementById("tgOpen");
+  if (tgBook) tgBook.href = "https://t.me/" + TELEGRAM_BOT + "?start=book";
+  if (tgOpen) tgOpen.href = "https://t.me/" + TELEGRAM_BOT;
+
   // данные из базы нужны для формы записи и ИИ-поиска
   await Promise.all([loadServicesFromDB(), loadDoctorsFromDB()]);
   renderDoctors();      // на главной карточек нет — функция сама ничего не делает
