@@ -167,6 +167,13 @@ async function askSpecialty(chat_id: number, data: any) {
   });
 }
 
+// После телефона: если специальность уже выбрана (например, подсказал ИИ) —
+// сразу переходим к дате, иначе спрашиваем специальность.
+async function afterPhone(chat_id: number, data: any) {
+  if (data.specialty) return askDate(chat_id, data);
+  return askSpecialty(chat_id, data);
+}
+
 async function askDate(chat_id: number, data: any) {
   await saveState(chat_id, { state: { step: "date", data } });
   await sendMessage(chat_id, "Выберите удобную дату приёма:", { reply_markup: dateKeyboard() });
@@ -238,6 +245,60 @@ async function finishBooking(chat_id: number, data: any) {
   );
 }
 
+// ---- ИИ-консультант по симптомам (как умный поиск на сайте) ----
+const URGENCY: Record<string, string> = {
+  emergency: "⚠️ Похоже на срочную ситуацию. При острых симптомах звоните 103 (скорая помощь).",
+  soon: "🟠 Желательно обратиться к врачу в ближайшее время.",
+  routine: "🟢 Плановое обращение.",
+};
+
+// Анализирует свободную жалобу пациента и советует специалиста.
+// Использует ту же серверную функцию symptom-search (OpenAI), что и сайт.
+async function handleSymptom(chat_id: number, text: string) {
+  await sendMessage(chat_id, "🔎 Анализирую вашу жалобу…");
+
+  const list = await loadSpecialties();
+  const specialties = list.map((x) => x.spec);
+
+  let specialty = "Терапевт";
+  let advice = "";
+  let urgency = "routine";
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/symptom-search`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "apikey": SERVICE_KEY,
+      },
+      body: JSON.stringify({ symptoms: text, specialties }),
+    });
+    if (resp.ok) {
+      const d = await resp.json();
+      if (!d.error) {
+        specialty = d.specialty || "Терапевт";
+        advice = d.advice || "";
+        urgency = d.urgency || "routine";
+      }
+    }
+  } catch (_) {
+    /* если ИИ временно недоступен — мягко советуем Терапевта */
+  }
+
+  // специалист обязательно должен быть из нашего списка
+  if (!specialties.includes(specialty)) specialty = "Терапевт";
+
+  let out = `🩺 Рекомендую обратиться к специалисту: <b>${specialty}</b>\n\n`;
+  if (advice) out += advice + "\n\n";
+  if (URGENCY[urgency]) out += URGENCY[urgency] + "\n\n";
+  out += "Это не диагноз — точную помощь окажет врач на приёме.";
+
+  return sendMessage(chat_id, out, {
+    reply_markup: { inline_keyboard: [[{ text: `📅 Записаться к: ${specialty}`, callback_data: `bookspec:${specialty}` }]] },
+  });
+}
+
 // ---- Главный обработчик одного обновления от Telegram ----
 async function handleUpdate(update: any) {
   // 1) Нажатие на кнопку (inline)
@@ -251,6 +312,19 @@ async function handleUpdate(update: any) {
     const st = user?.state ?? {};
 
     if (dataStr === "book") return startBooking(chat_id, user);
+
+    // Запись к специалисту, которого подсказал ИИ-консультант (специальность уже известна)
+    if (dataStr.startsWith("bookspec:")) {
+      const spec = dataStr.slice(9);
+      const list = await loadSpecialties();
+      const found = list.find((x) => x.spec === spec);
+      await saveState(chat_id, { state: { step: "name", data: { specialty: spec, doctor: found?.doctor ?? null } } });
+      return sendMessage(
+        chat_id,
+        `Записываю вас к специалисту «${spec}». 🩺\n\nКак вас зовут? (Фамилия и имя)`,
+        { reply_markup: removeKeyboard },
+      );
+    }
     if (dataStr === "cancel") {
       await saveState(chat_id, { state: {} });
       return sendMessage(chat_id, "Запись отменена. Если что — нажмите /start, чтобы начать заново.", { reply_markup: removeKeyboard });
@@ -295,7 +369,7 @@ async function handleUpdate(update: any) {
     const phone = onlyDigits(msg.contact.phone_number);
     if (st.step === "phone") {
       st.data.phone = phone;
-      return askSpecialty(chat_id, st.data);
+      return afterPhone(chat_id, st.data);
     }
     // контакт прислали вне записи — просто запоминаем телефон,
     // чтобы связать с записью с сайта и слать подтверждения/напоминания
@@ -346,15 +420,31 @@ async function handleUpdate(update: any) {
     const digits = onlyDigits(text);
     if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите телефон в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».");
     st.data.phone = digits;
-    return askSpecialty(chat_id, st.data);
+    return afterPhone(chat_id, st.data);
   }
 
-  // Если человек пишет что-то вне диалога — мягко направляем к записи
-  return sendMessage(
-    chat_id,
-    "Чтобы записаться на приём, нажмите кнопку ниже 👇 или команду /start.",
-    { reply_markup: { inline_keyboard: [[{ text: "📅 Записаться на приём", callback_data: "book" }]] } },
-  );
+  // Пустое сообщение (стикер/фото без текста) — просим описать жалобу словами
+  if (!text) {
+    return sendMessage(chat_id, "Опишите, пожалуйста, что вас беспокоит, текстом 🙂", { reply_markup: mainMenu });
+  }
+
+  // Короткие приветствия — здороваемся и предлагаем описать жалобу
+  const greet = text.toLowerCase().replace(/[^а-яёa-z]/gi, "");
+  if (["привет", "приветик", "здравствуйте", "здравствуй", "хай", "ку", "hi", "hello", "добрыйдень", "доброеутро", "добрыйвечер"].includes(greet)) {
+    return sendMessage(
+      chat_id,
+      "Здравствуйте! 👋 Опишите, что вас беспокоит (например: «болит низ живота» или «болит правая нога»), и я подскажу, к какому врачу обратиться. Или нажмите кнопку ниже, чтобы записаться.",
+      { reply_markup: mainMenu },
+    );
+  }
+
+  // Если человек печатает во время выбора кнопками — мягко подсказываем
+  if (st.step === "specialty" || st.step === "date" || st.step === "time" || st.step === "confirm") {
+    return sendMessage(chat_id, "Пожалуйста, выберите вариант кнопкой выше 👆");
+  }
+
+  // Свободный вопрос о симптомах — отвечает ИИ-консультант (как умный поиск на сайте)
+  return handleSymptom(chat_id, text);
 }
 
 // ---- Точка входа: Telegram стучится сюда ----
