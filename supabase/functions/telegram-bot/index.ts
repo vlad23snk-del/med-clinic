@@ -255,6 +255,24 @@ const URGENCY: Record<string, string> = {
 // Анализирует свободную жалобу пациента и советует специалиста.
 // Использует ту же серверную функцию symptom-search (OpenAI), что и сайт.
 async function handleSymptom(chat_id: number, text: string) {
+  const user = await getUser(chat_id);
+  const sex = user?.sex;
+  // Пол спрашиваем ОДИН раз и запоминаем — чтобы не советовать, например,
+  // гинеколога мужчине. Жалобу сохраняем и продолжим после ответа о поле.
+  if (sex !== "male" && sex !== "female") {
+    await saveState(chat_id, { state: { step: "ask_sex", data: { pendingSymptom: text } } });
+    return sendMessage(chat_id, "Чтобы точнее подобрать врача, уточните, пожалуйста, ваш пол:", {
+      reply_markup: { inline_keyboard: [[
+        { text: "👨 Мужской", callback_data: "sex:male" },
+        { text: "👩 Женский", callback_data: "sex:female" },
+      ]] },
+    });
+  }
+  return runSymptomAnalysis(chat_id, text, sex);
+}
+
+// Сам ИИ-анализ жалобы — уже с известным полом пациента
+async function runSymptomAnalysis(chat_id: number, text: string, sex: string) {
   await sendMessage(chat_id, "🔎 Анализирую вашу жалобу…");
 
   const list = await loadSpecialties();
@@ -272,7 +290,7 @@ async function handleSymptom(chat_id: number, text: string) {
         "Authorization": `Bearer ${SERVICE_KEY}`,
         "apikey": SERVICE_KEY,
       },
-      body: JSON.stringify({ symptoms: text, specialties }),
+      body: JSON.stringify({ symptoms: text, specialties, sex }),
     });
     if (resp.ok) {
       const d = await resp.json();
@@ -325,6 +343,16 @@ async function handleUpdate(update: any) {
         { reply_markup: removeKeyboard },
       );
     }
+
+    // Пользователь указал пол — запоминаем и продолжаем анализ отложенной жалобы
+    if (dataStr.startsWith("sex:")) {
+      const sex = dataStr.slice(4); // "male" или "female"
+      const pending = st.step === "ask_sex" ? st.data?.pendingSymptom : null;
+      await saveState(chat_id, { sex, state: {} });
+      if (pending) return runSymptomAnalysis(chat_id, pending, sex);
+      return sendMessage(chat_id, "Спасибо! Опишите, что вас беспокоит, и я подскажу подходящего врача.", { reply_markup: mainMenu });
+    }
+
     if (dataStr === "cancel") {
       await saveState(chat_id, { state: {} });
       return sendMessage(chat_id, "Запись отменена. Если что — нажмите /start, чтобы начать заново.", { reply_markup: removeKeyboard });
