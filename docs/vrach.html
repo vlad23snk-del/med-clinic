@@ -74,7 +74,31 @@
     .stsel.cancelled { color:#dc2626; border-color:#fecaca; background:#fef2f2; }
     .empty { color:var(--muted); padding:30px; text-align:center; grid-column:1/-1; }
 
-    @media (max-width:620px){ .stats { grid-template-columns:1fr; } .plist { grid-template-columns:1fr; } }
+    .cardbtn { margin-top:4px; padding:10px; border:1.5px solid rgba(31,107,255,.3); background:#f5f9ff; color:var(--primary); font-weight:700; font-size:13px; border-radius:10px; cursor:pointer; font-family:inherit; transition:.15s; }
+    .cardbtn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    /* Окно медкарты пациента */
+    .modal { position:fixed; inset:0; z-index:100; background:rgba(15,23,42,.55); display:none; align-items:center; justify-content:center; padding:20px; }
+    .modal.open { display:flex; }
+    .sheet { background:#fff; border-radius:22px; width:100%; max-width:560px; max-height:88vh; overflow:auto; box-shadow:0 30px 70px rgba(15,23,42,.4); }
+    .sheet-head { position:sticky; top:0; background:linear-gradient(135deg,#1f6bff,#0ea5e9); color:#fff; padding:22px 26px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .sheet-head h3 { font-size:20px; font-weight:800; }
+    .sheet-head .ph { opacity:.92; font-size:14px; margin-top:2px; }
+    .sheet-head .x { background:rgba(255,255,255,.2); border:none; color:#fff; width:34px; height:34px; border-radius:10px; font-size:20px; cursor:pointer; flex-shrink:0; line-height:1; }
+    .sheet-head .x:hover { background:rgba(255,255,255,.32); }
+    .sheet-body { padding:22px 26px 28px; }
+    .mrow { padding:14px 0; border-bottom:1px solid var(--line); }
+    .mrow:last-child { border-bottom:none; }
+    .mrow .lbl { font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px; }
+    .mrow .val { font-size:15px; color:var(--ink); white-space:pre-wrap; }
+    .mrow.alert .val { color:#b91c1c; font-weight:700; }
+    .mrow.alert .lbl { color:#dc2626; }
+    .mini { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:6px; }
+    .mini .box { background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+    .mini .box .lbl { font-size:11px; }
+    .mcard-empty { text-align:center; color:var(--muted); padding:24px 6px; }
+
+    @media (max-width:620px){ .stats { grid-template-columns:1fr; } .plist { grid-template-columns:1fr; } .mini { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -102,6 +126,20 @@
 
   <!-- Кабинет -->
   <div class="cab" id="cab"></div>
+
+  <!-- Окно медкарты пациента -->
+  <div class="modal" id="cardModal" onclick="if(event.target===this)closeCard()">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div>
+          <h3 id="cardName">Медкарта пациента</h3>
+          <div class="ph" id="cardPhone"></div>
+        </div>
+        <button class="x" onclick="closeCard()">×</button>
+      </div>
+      <div class="sheet-body" id="cardBody"></div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -269,9 +307,67 @@
           ${a.comment ? `<div class="row">💬 ${esc(a.comment)}</div>` : ""}
           <div><span class="src ${src}">${SRC_LABEL[src] || src}</span></div>
           <select class="stsel ${st}" onchange="setStatus(${a.id}, this.value, this)">${opts}</select>
+          <button class="cardbtn" onclick="openCard('${esc(a.phone || "")}', '${esc(a.full_name || "Пациент")}')">🪪 Открыть медкарту</button>
         </div>`;
       }).join("");
     }
+
+    /* ====== Медкарта пациента ====== */
+    function fmtPhone(p) {
+      const d = (p || "").replace(/\D/g, "").slice(-10);
+      if (d.length !== 10) return p || "";
+      return `+7 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6,8)}-${d.slice(8,10)}`;
+    }
+    function ageFrom(birth) {
+      if (!birth) return "";
+      const b = new Date(birth); if (isNaN(b)) return "";
+      const now = new Date();
+      let a = now.getFullYear() - b.getFullYear();
+      const m = now.getMonth() - b.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < b.getDate())) a--;
+      return a >= 0 && a < 130 ? a + " лет" : "";
+    }
+    const GENDER = { "м": "Мужской", "ж": "Женский" };
+
+    async function openCard(phone, name) {
+      const modal = get("cardModal");
+      get("cardName").textContent = "Медкарта: " + (name || "Пациент");
+      get("cardPhone").textContent = "📞 " + fmtPhone(phone);
+      get("cardBody").innerHTML = '<div class="mcard-empty">Загрузка…</div>';
+      modal.classList.add("open");
+
+      const r = await api({ action: "patient", phone });
+      if (r.status === 401) { logout(); return; }
+      if (r.status !== 200) { get("cardBody").innerHTML = `<div class="mcard-empty">${esc(r.data.error || "Не удалось загрузить карту")}</div>`; return; }
+      const p = r.data.patient;
+      if (!p) {
+        get("cardBody").innerHTML = '<div class="mcard-empty">🗂️ Пациент ещё не заполнил медкарту в личном кабинете.<br>Основная информация по записи — в карточке слева.</div>';
+        return;
+      }
+
+      const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
+      const age = ageFrom(p.birth_date);
+      const birth = p.birth_date ? new Date(p.birth_date).toLocaleDateString("ru-RU") : "—";
+      const mini = `<div class="mini">
+        <div class="box"><div class="lbl">Возраст</div><div class="val">${age || "—"}</div></div>
+        <div class="box"><div class="lbl">Пол</div><div class="val">${GENDER[p.gender] || "—"}</div></div>
+        <div class="box"><div class="lbl">Группа крови</div><div class="val">${esc(p.blood_type) || "—"}</div></div>
+      </div>`;
+
+      const row = (lbl, val, alert) => `<div class="mrow ${alert ? "alert" : ""}"><div class="lbl">${lbl}</div><div class="val">${val ? esc(val) : "—"}</div></div>`;
+
+      get("cardBody").innerHTML =
+        (fio ? `<div class="mrow"><div class="lbl">ФИО</div><div class="val">${esc(fio)}</div></div>` : "") +
+        `<div class="mrow"><div class="lbl">Дата рождения</div><div class="val">${birth}</div></div>` +
+        mini +
+        row("⚠️ Аллергии", p.allergies, true) +
+        row("🩺 Хронические болезни и диагнозы", p.diseases) +
+        row("🔪 Перенесённые операции", p.surgeries) +
+        row("💊 Постоянные лекарства", p.medications) +
+        row("💬 Комментарии пациента", p.comments);
+    }
+    function closeCard() { get("cardModal").classList.remove("open"); }
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeCard(); });
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadDoctorList();

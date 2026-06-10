@@ -155,6 +155,8 @@
     .tg-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(34,158,217,0.6); }
     .tg-btn.ghost { color: #fff; background: rgba(255,255,255,0.14); border: 1.5px solid rgba(255,255,255,0.55); }
     .tg-btn.ghost:hover { background: rgba(255,255,255,0.24); transform: translateY(-2px); }
+    .tg-btn.wa { color: #fff; background: linear-gradient(135deg, #25D366, #1ebe5b); box-shadow: 0 10px 26px rgba(37,211,102,0.45); }
+    .tg-btn.wa:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(37,211,102,0.55); }
 
     /* Полоса статистики */
     .stats {
@@ -366,13 +368,13 @@
     </p>
 
     <div class="tg-actions">
-      <a id="tgBook" class="tg-btn primary" href="#" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
-        Записаться в Telegram
-      </a>
-      <a id="tgOpen" class="tg-btn ghost" href="#" target="_blank" rel="noopener">
+      <a id="tgOpen" class="tg-btn primary" href="#" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
         Перейти в Telegram
+      </a>
+      <a id="waOpen" class="tg-btn wa" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2c-5.46 0-9.9 4.43-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.27-1.38a9.9 9.9 0 004.77 1.22h.01c5.46 0 9.9-4.43 9.9-9.9 0-2.64-1.03-5.13-2.9-7C17.18 3.03 14.69 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.32-1.95 1.36-.5.04-.97.22-3.28-.68-2.77-1.09-4.5-3.93-4.64-4.11-.13-.18-1.1-1.46-1.1-2.79 0-1.33.7-1.98.95-2.25.24-.27.53-.34.71-.34l.5.01c.16.01.38-.06.59.45.24.58.81 2 .88 2.14.07.14.12.31.02.49-.09.18-.14.29-.27.45l-.41.48c-.13.13-.27.28-.12.54.16.27.69 1.14 1.49 1.85 1.02.91 1.88 1.2 2.15 1.33.27.13.42.11.58-.07.16-.18.67-.78.85-1.05.18-.27.36-.22.6-.13.24.09 1.55.73 1.81.86.27.13.45.2.51.31.07.11.07.63-.17 1.31z"/></svg>
+        Перейти в Ватсап
       </a>
     </div>
 
@@ -550,9 +552,14 @@ const SUPABASE_KEY = "sb_publishable_i_LZdRnHXMYNFf608V86GA_ohVuGfAH";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ====== Telegram-бот ======
-   Имя бота для кнопок «Записаться/Перейти в Telegram» (без символа @).
+   Имя бота для кнопки «Перейти в Telegram» (без символа @).
    Если поменяешь бота — впиши сюда новое имя. */
 const TELEGRAM_BOT = "Test_Nonuser_bot";
+
+/* ====== WhatsApp ======
+   Номер для кнопки «Перейти в Ватсап» — только цифры, с кодом страны, без + и пробелов.
+   Сейчас стоит номер-заглушка из шапки сайта. Впиши сюда реальный номер клиники. */
+const WHATSAPP_PHONE = "78001234567";
 
 /* ====== Данные услуг: запасной список (если база вдруг недоступна) ====== */
 let services = [
@@ -1042,11 +1049,11 @@ function renderNews() {
 document.addEventListener("DOMContentLoaded", async () => {
   renderNews();
 
-  // ссылки кнопок Telegram (формируются из имени бота TELEGRAM_BOT)
-  const tgBook = document.getElementById("tgBook");
+  // ссылки кнопок: Telegram (из имени бота TELEGRAM_BOT) и WhatsApp (из номера)
   const tgOpen = document.getElementById("tgOpen");
-  if (tgBook) tgBook.href = "https://t.me/" + TELEGRAM_BOT + "?start=book";
+  const waOpen = document.getElementById("waOpen");
   if (tgOpen) tgOpen.href = "https://t.me/" + TELEGRAM_BOT;
+  if (waOpen) waOpen.href = "https://wa.me/" + WHATSAPP_PHONE;
 
   // данные из базы нужны для формы записи и ИИ-поиска
   await Promise.all([loadServicesFromDB(), loadDoctorsFromDB()]);

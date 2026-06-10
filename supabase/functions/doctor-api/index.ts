@@ -35,6 +35,10 @@ function clientIp(req: Request): string {
   const xff = req.headers.get("x-forwarded-for") || "";
   return xff.split(",")[0].trim() || "unknown";
 }
+// Телефон → последние 10 цифр (для связи записи и медкарты пациента)
+function phone10(raw: string): string {
+  return (raw || "").replace(/\D/g, "").slice(-10);
+}
 // Троттлинг «безопасно падает» (fail-open): сбой счётчика не ломает вход.
 async function isBlocked(key: string): Promise<boolean> {
   try {
@@ -125,6 +129,25 @@ Deno.serve(async (req) => {
     const { error } = await db.from("appointments").update({ status: body.status }).eq("id", body.id);
     if (error) return json({ error: error.message }, 500);
     return json({ ok: true });
+  }
+
+  // Медкарта пациента по записи: врач видит карту только своих пациентов
+  if (body.action === "patient") {
+    const target = phone10(body.phone);
+    if (target.length !== 10) return json({ error: "Некорректный телефон" }, 400);
+    // проверяем, что среди записей этого врача есть пациент с таким телефоном
+    const mineList = await appointmentsFor(doc);
+    const isMine = mineList.some((a: any) => phone10(a.phone) === target);
+    if (!isMine) return json({ error: "Нет доступа к этому пациенту" }, 403);
+    const { data: patient } = await db.from("patients").select("*").eq("phone", target).maybeSingle();
+    if (!patient) return json({ ok: true, patient: null }); // карта ещё не заполнена
+    const card = {
+      first_name: patient.first_name, last_name: patient.last_name,
+      birth_date: patient.birth_date, gender: patient.gender, blood_type: patient.blood_type,
+      diseases: patient.diseases, allergies: patient.allergies,
+      surgeries: patient.surgeries, medications: patient.medications, comments: patient.comments,
+    };
+    return json({ ok: true, patient: card });
   }
 
   return json({ error: "Неизвестное действие" }, 400);

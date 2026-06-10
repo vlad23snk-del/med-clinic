@@ -7,36 +7,71 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    :root { --primary:#1f6bff; --primary-600:#1556d6; --accent:#12b8a6; --ink:#0f172a; --muted:#64748b; --line:#e7eef7; --bg:#f4f8fd; }
+    :root { --primary:#1f6bff; --primary-600:#1556d6; --accent:#12b8a6; --ink:#0f172a; --muted:#64748b; --line:#e7eef7; --bg:#f4f8fd; --card-shadow:0 14px 40px rgba(15,45,90,.08); }
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
-    .nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.72); backdrop-filter:saturate(180%) blur(14px); border-bottom:1px solid rgba(15,45,90,.07); }
-    .nav-inner { max-width:1180px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    body { font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased; }
+    .nav { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.78); backdrop-filter:saturate(180%) blur(14px); border-bottom:1px solid rgba(15,45,90,.07); }
+    .nav-inner { max-width:1080px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .brand { display:flex; align-items:center; gap:11px; font-weight:800; font-size:19px; }
     .brand .logo { width:40px; height:40px; display:grid; place-items:center; border-radius:12px; color:#fff; font-size:21px; background:linear-gradient(135deg,var(--primary),var(--accent)); box-shadow:0 8px 18px rgba(31,107,255,.32); }
     .brand b { color:var(--primary); }
-    .nav a.back { text-decoration:none; color:var(--primary); font-weight:700; font-size:14px; border:1.5px solid rgba(31,107,255,.35); padding:9px 16px; border-radius:11px; transition:.2s; }
+    .nav .right { display:flex; gap:10px; align-items:center; }
+    .nav a.back, .nav button.logout { text-decoration:none; font-weight:700; font-size:14px; padding:9px 16px; border-radius:11px; cursor:pointer; font-family:inherit; border:1.5px solid rgba(31,107,255,.35); color:var(--primary); background:#fff; transition:.2s; }
     .nav a.back:hover { background:var(--primary); color:#fff; }
+    .nav button.logout { border-color:#fecaca; color:#dc2626; display:none; }
+    .nav button.logout:hover { background:#fef2f2; }
 
-    .hero { background:linear-gradient(135deg,#1f6bff,#2563eb 45%,#0ea5e9); color:#fff; padding:54px 22px 40px; text-align:center; }
-    .hero h1 { font-size:34px; font-weight:800; letter-spacing:-.02em; }
-    .hero p { opacity:.95; margin-top:8px; }
+    /* ---------- Вход ---------- */
+    .auth-wrap { max-width:460px; margin:40px auto 60px; padding:0 22px; }
+    .auth { background:#fff; border:1px solid var(--line); border-radius:22px; padding:34px; box-shadow:var(--card-shadow); }
+    .auth .ic { font-size:42px; text-align:center; }
+    .auth h1 { font-size:24px; text-align:center; margin:8px 0 6px; }
+    .auth .sub { color:var(--muted); font-size:14px; text-align:center; margin-bottom:22px; }
+    label { display:block; font-weight:600; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+    input, select, textarea { width:100%; padding:13px 14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:15px; font-family:inherit; outline:none; background:#fff; transition:.15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
+    textarea { min-height:84px; resize:vertical; line-height:1.5; }
+    .ch-buttons { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+    .ch { display:flex; align-items:center; justify-content:center; gap:9px; padding:14px; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; color:#fff; transition:transform .15s, box-shadow .15s; }
+    .ch:hover { transform:translateY(-1px); }
+    .ch:disabled { opacity:.6; cursor:default; transform:none; }
+    .ch.tg { background:linear-gradient(135deg,#229ED9,#2AABEE); }
+    .ch.wa { background:linear-gradient(135deg,#25D366,#1ebe5b); }
+    .ch svg { width:20px; height:20px; }
+    .btn { width:100%; margin-top:16px; padding:14px; border:none; color:#fff; border-radius:12px; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; background:linear-gradient(135deg,var(--primary),var(--primary-600)); }
+    .btn.ghost { background:#f1f5f9; color:#334155; }
+    .msg { margin-top:14px; font-size:14px; min-height:18px; }
+    .msg.err { color:#dc2626; }
+    .msg.ok { color:#16a34a; }
+    .codebox input { letter-spacing:.4em; text-align:center; font-size:22px; font-weight:700; }
+    .hide { display:none !important; }
 
-    .card-wrap { max-width:460px; margin:-26px auto 60px; padding:0 22px; }
-    .card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:32px; box-shadow:0 18px 50px rgba(15,45,90,.1); }
-    .card h2 { font-size:22px; margin-bottom:6px; }
-    .card .sub { color:var(--muted); font-size:15px; margin-bottom:22px; }
-    label { display:block; font-weight:600; font-size:14px; margin-top:16px; }
-    input { width:100%; padding:14px; margin-top:6px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:15px; font-family:inherit; outline:none; transition:.2s; }
-    input:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
-    .btn { width:100%; margin-top:22px; padding:15px; border:none; color:#fff; border-radius:12px; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; background:linear-gradient(135deg,#229ED9,#2AABEE); display:inline-flex; align-items:center; justify-content:center; gap:10px; transition:transform .2s, box-shadow .2s; }
-    .btn:hover { transform:translateY(-1px); box-shadow:0 12px 26px rgba(34,158,217,.4); }
-    .btn svg { width:20px; height:20px; }
-    .note { margin-top:18px; padding:14px; background:#f1f7ff; border-radius:12px; color:#334155; font-size:13px; line-height:1.5; border-left:4px solid var(--primary); }
-    .steps { margin-top:22px; }
-    .step { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
-    .step .n { flex-shrink:0; width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; font-weight:700; font-size:14px; display:grid; place-items:center; }
-    .step p { font-size:14px; color:#334155; }
+    /* ---------- Кабинет ---------- */
+    .cab { max-width:1080px; margin:26px auto 60px; padding:0 22px; }
+    .hero { position:relative; overflow:hidden; color:#fff; border-radius:24px; padding:28px 30px; display:flex; gap:20px; align-items:center; flex-wrap:wrap;
+      background:radial-gradient(500px 300px at 100% 0%, rgba(18,184,166,.5), transparent 60%), linear-gradient(135deg,#1f6bff,#2563eb 55%,#0ea5e9); box-shadow:0 20px 50px rgba(31,107,255,.28); }
+    .hero .ava { width:84px; height:84px; border-radius:22px; background:rgba(255,255,255,.2); border:3px solid rgba(255,255,255,.35); display:grid; place-items:center; font-size:34px; font-weight:800; flex-shrink:0; }
+    .hero h1 { font-size:26px; font-weight:800; letter-spacing:-.02em; }
+    .hero .badge { display:inline-block; margin-top:6px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:5px 13px; border-radius:999px; font-weight:700; font-size:13px; }
+
+    .grid2 { display:grid; grid-template-columns:1.15fr .85fr; gap:18px; margin-top:18px; align-items:start; }
+    @media (max-width:860px){ .grid2 { grid-template-columns:1fr; } }
+    .block { background:#fff; border:1px solid var(--line); border-radius:20px; padding:24px; box-shadow:var(--card-shadow); margin-bottom:18px; }
+    .block h2 { font-size:18px; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+    .block .hint { color:var(--muted); font-size:13px; margin-bottom:14px; }
+    .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:520px){ .row2 { grid-template-columns:1fr; } }
+    .med textarea { min-height:70px; }
+    .save-bar { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:6px; }
+    .save-bar .btn { width:auto; padding:13px 26px; margin-top:0; }
+
+    .appt { border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+    .appt .when { font-weight:800; }
+    .appt .meta { color:var(--muted); font-size:14px; }
+    .pill { display:inline-block; font-size:12px; font-weight:700; padding:3px 10px; border-radius:999px; margin-top:6px; }
+    .pill.new { background:#eff6ff; color:#1d4ed8; } .pill.confirmed { background:#f0fdf4; color:#16a34a; }
+    .pill.done { background:#ecfeff; color:#0891b2; } .pill.cancelled { background:#fef2f2; color:#dc2626; }
+    .empty { color:var(--muted); text-align:center; padding:24px; }
     footer { text-align:center; color:#94a3b8; font-size:13px; padding:26px; border-top:1px solid var(--line); }
   </style>
 </head>
@@ -44,44 +79,254 @@
   <nav class="nav">
     <div class="nav-inner">
       <div class="brand"><span class="logo">✚</span><span>Клиника <b>«Здоровье»</b></span></div>
-      <a class="back" href="index.html">← На главную</a>
+      <div class="right">
+        <button class="logout" id="logoutBtn" onclick="logout()">Выйти</button>
+        <a class="back" href="index.html">← На главную</a>
+      </div>
     </div>
   </nav>
 
-  <div class="hero">
-    <h1>👤 Личный кабинет</h1>
-    <p>Ваши записи на приём — в одном месте</p>
+  <!-- ============ ВХОД: шаг 1 — телефон ============ -->
+  <div class="auth-wrap" id="step-phone">
+    <div class="auth">
+      <div class="ic">👤</div>
+      <h1>Личный кабинет</h1>
+      <p class="sub">Введите номер телефона — пришлём код для входа.</p>
+      <label for="phone">Номер телефона</label>
+      <input id="phone" type="tel" placeholder="+7 (___) ___-__-__" autocomplete="tel" />
+      <div class="ch-buttons">
+        <button class="ch tg" id="btnTg" onclick="requestCode('telegram')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+          Код в Telegram
+        </button>
+        <button class="ch wa" id="btnWa" onclick="requestCode('whatsapp')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.9 4.43-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.27-1.38a9.9 9.9 0 004.77 1.22h.01c5.46 0 9.9-4.43 9.9-9.9 0-2.64-1.03-5.13-2.9-7C17.18 3.03 14.69 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.32-1.95 1.36-.5.04-.97.22-3.28-.68-2.77-1.09-4.5-3.93-4.64-4.11-.13-.18-1.1-1.46-1.1-2.79 0-1.33.7-1.98.95-2.25.24-.27.53-.34.71-.34l.5.01c.16.01.38-.06.59.45.24.58.81 2 .88 2.14.07.14.12.31.02.49-.09.18-.14.29-.27.45l-.41.48c-.13.13-.27.28-.12.54.16.27.69 1.14 1.49 1.85 1.02.91 1.88 1.2 2.15 1.33.27.13.42.11.58-.07.16-.18.67-.78.85-1.05.18-.27.36-.22.6-.13.24.09 1.55.73 1.81.86.27.13.45.2.51.31.07.11.07.63-.17 1.31z"/></svg>
+          Код в WhatsApp
+        </button>
+      </div>
+      <div class="msg" id="phoneMsg"></div>
+    </div>
   </div>
 
-  <div class="card-wrap">
-    <div class="card">
-      <h2>Вход по номеру телефона</h2>
-      <p class="sub">Введите номер, на который записывались. Код подтверждения придёт в Telegram.</p>
+  <!-- ============ ВХОД: шаг 2 — код ============ -->
+  <div class="auth-wrap hide" id="step-code">
+    <div class="auth">
+      <div class="ic">🔐</div>
+      <h1>Введите код</h1>
+      <p class="sub">Мы отправили 6-значный код. Введите его ниже.</p>
+      <div class="codebox">
+        <label for="code">Код из сообщения</label>
+        <input id="code" inputmode="numeric" maxlength="6" placeholder="••••••" onkeydown="if(event.key==='Enter')verifyCode()" />
+      </div>
+      <button class="btn" onclick="verifyCode()">Войти</button>
+      <button class="btn ghost" onclick="backToPhone()">← Изменить номер</button>
+      <div class="msg" id="codeMsg"></div>
+    </div>
+  </div>
 
-      <label for="phone">Телефон</label>
-      <input id="phone" type="tel" placeholder="+7 (___) ___-__-__" />
+  <!-- ============ КАБИНЕТ ============ -->
+  <div class="cab hide" id="cabinet">
+    <div class="hero">
+      <div class="ava" id="ava">👤</div>
+      <div>
+        <h1 id="heroName">Ваша медкарта</h1>
+        <span class="badge" id="heroPhone"></span>
+      </div>
+    </div>
 
-      <label for="email">Email (необязательно)</label>
-      <input id="email" type="email" placeholder="для копий уведомлений" />
+    <div class="grid2">
+      <!-- Левая колонка: личные данные + медкарта -->
+      <div>
+        <div class="block">
+          <h2>🪪 Основная информация</h2>
+          <p class="hint">Эти данные видит врач, когда вы записываетесь на приём.</p>
+          <div class="row2">
+            <div><label for="f_first">Имя</label><input id="f_first" /></div>
+            <div><label for="f_last">Фамилия</label><input id="f_last" /></div>
+          </div>
+          <div class="row2">
+            <div><label for="f_birth">Дата рождения</label><input id="f_birth" type="date" /></div>
+            <div><label for="f_gender">Пол</label>
+              <select id="f_gender"><option value="">—</option><option value="м">Мужской</option><option value="ж">Женский</option></select>
+            </div>
+          </div>
+          <div class="row2">
+            <div><label for="f_phone">Телефон</label><input id="f_phone" type="tel" /></div>
+            <div><label for="f_blood">Группа крови</label><input id="f_blood" placeholder="напр. II (A) Rh+" /></div>
+          </div>
+          <label for="f_email">Email (необязательно)</label>
+          <input id="f_email" type="email" placeholder="для копий уведомлений" />
+        </div>
 
-      <button class="btn" onclick="alert('Вход через Telegram скоро будет подключён 🙂')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
-        Получить код в Telegram
-      </button>
-
-      <div class="note">
-        🔧 <b>Раздел в разработке.</b> Скоро здесь можно будет войти по номеру телефона через код в Telegram
-        и увидеть все свои прошлые и будущие записи на приём.
+        <div class="block med">
+          <h2>🩺 Медицинская карта</h2>
+          <p class="hint">Заполните заранее — врач увидит это перед приёмом и будет готов помочь.</p>
+          <label for="f_diseases">Хронические болезни и диагнозы</label>
+          <textarea id="f_diseases" placeholder="Напр.: гипертония, сахарный диабет 2 типа, гастрит…"></textarea>
+          <label for="f_allergies">Аллергии</label>
+          <textarea id="f_allergies" placeholder="Напр.: пенициллин, орехи, пыльца…"></textarea>
+          <label for="f_surgeries">Перенесённые операции</label>
+          <textarea id="f_surgeries" placeholder="Напр.: удаление аппендикса (2018)…"></textarea>
+          <label for="f_medications">Постоянно принимаемые лекарства</label>
+          <textarea id="f_medications" placeholder="Напр.: эналаприл 5 мг утром…"></textarea>
+          <label for="f_comments">Комментарии и пожелания</label>
+          <textarea id="f_comments" placeholder="Любая важная для врача информация…"></textarea>
+          <div class="save-bar">
+            <button class="btn" onclick="saveProfile()">💾 Сохранить медкарту</button>
+            <span class="msg" id="saveMsg"></span>
+          </div>
+        </div>
       </div>
 
-      <div class="steps">
-        <div class="step"><span class="n">1</span><p>Вводите номер телефона, с которого записывались.</p></div>
-        <div class="step"><span class="n">2</span><p>Получаете код подтверждения в нашем Telegram-боте.</p></div>
-        <div class="step"><span class="n">3</span><p>Видите историю записей: врач, услуга, дата и статус.</p></div>
+      <!-- Правая колонка: записи -->
+      <div>
+        <div class="block">
+          <h2>📅 Мои записи</h2>
+          <p class="hint">Ваши прошлые и будущие приёмы.</p>
+          <div id="apptList"><div class="empty">Загрузка…</div></div>
+        </div>
       </div>
     </div>
   </div>
 
   <footer>© 2026 Медицинский центр «Здоровье»</footer>
+
+  <script>
+    const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
+    const API = SUPABASE_URL + "/functions/v1/patient-api";
+    const get = id => document.getElementById(id);
+    let pendingPhone = "";
+
+    async function api(payload) {
+      const r = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      return { status: r.status, data: await r.json().catch(() => ({})) };
+    }
+    function token() { return localStorage.getItem("patient_token") || ""; }
+    function show(id) { ["step-phone","step-code","cabinet"].forEach(s => get(s).classList.toggle("hide", s !== id)); }
+
+    /* ---------- Шаг 1: запрос кода ---------- */
+    async function requestCode(channel) {
+      const phone = get("phone").value.trim();
+      const msg = get("phoneMsg");
+      if (phone.replace(/\D/g, "").length < 10) { msg.className = "msg err"; msg.textContent = "Введите корректный номер телефона"; return; }
+      pendingPhone = phone;
+      get("btnTg").disabled = true; get("btnWa").disabled = true;
+      msg.className = "msg"; msg.textContent = "Отправляем код…";
+      const r = await api({ action: "request_code", phone, channel });
+      get("btnTg").disabled = false; get("btnWa").disabled = false;
+      if (r.data.ok) {
+        msg.className = "msg ok"; msg.textContent = "Код отправлен!";
+        show("step-code"); get("code").focus();
+      } else {
+        msg.className = "msg err"; msg.textContent = r.data.error || "Не удалось отправить код";
+      }
+    }
+
+    /* ---------- Шаг 2: проверка кода ---------- */
+    async function verifyCode() {
+      const code = get("code").value.trim();
+      const msg = get("codeMsg");
+      if (!code) { msg.className = "msg err"; msg.textContent = "Введите код"; return; }
+      msg.className = "msg"; msg.textContent = "Проверяем…";
+      const r = await api({ action: "verify_code", phone: pendingPhone, code });
+      if (r.data.ok && r.data.token) {
+        localStorage.setItem("patient_token", r.data.token);
+        msg.textContent = "";
+        get("code").value = "";
+        openCabinet(r.data.profile);
+      } else {
+        msg.className = "msg err"; msg.textContent = r.data.error || "Неверный код";
+      }
+    }
+    function backToPhone() { show("step-phone"); get("phoneMsg").textContent = ""; }
+
+    /* ---------- Кабинет ---------- */
+    function fmtPhone(p10) {
+      const d = (p10 || "").replace(/\D/g, "");
+      if (d.length !== 10) return p10 || "";
+      return `+7 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6,8)}-${d.slice(8,10)}`;
+    }
+    function fill(id, v) { get(id).value = v == null ? "" : v; }
+
+    function openCabinet(p) {
+      show("cabinet");
+      get("logoutBtn").style.display = "inline-block";
+      const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
+      get("heroName").textContent = fio || "Ваша медкарта";
+      get("ava").textContent = (p.first_name || "👤").trim().charAt(0).toUpperCase();
+      get("heroPhone").textContent = "📞 " + fmtPhone(p.phone);
+      fill("f_first", p.first_name); fill("f_last", p.last_name);
+      fill("f_birth", p.birth_date); fill("f_gender", p.gender);
+      fill("f_phone", fmtPhone(p.phone)); fill("f_blood", p.blood_type); fill("f_email", p.email);
+      fill("f_diseases", p.diseases); fill("f_allergies", p.allergies);
+      fill("f_surgeries", p.surgeries); fill("f_medications", p.medications); fill("f_comments", p.comments);
+      loadAppointments();
+    }
+
+    async function saveProfile() {
+      const msg = get("saveMsg");
+      msg.className = "msg"; msg.textContent = "Сохраняем…";
+      const profile = {
+        first_name: get("f_first").value, last_name: get("f_last").value,
+        birth_date: get("f_birth").value || null, gender: get("f_gender").value,
+        phone: get("f_phone").value, blood_type: get("f_blood").value, email: get("f_email").value,
+        diseases: get("f_diseases").value, allergies: get("f_allergies").value,
+        surgeries: get("f_surgeries").value, medications: get("f_medications").value, comments: get("f_comments").value,
+      };
+      const r = await api({ action: "update", token: token(), profile });
+      if (r.status === 401) { logout(); return; }
+      if (r.data.ok) {
+        msg.className = "msg ok"; msg.textContent = "✅ Сохранено";
+        openCabinet(r.data.profile); // обновим имя/телефон в шапке
+        get("saveMsg").className = "msg ok"; get("saveMsg").textContent = "✅ Сохранено";
+        setTimeout(() => { get("saveMsg").textContent = ""; }, 2500);
+      } else {
+        msg.className = "msg err"; msg.textContent = r.data.error || "Не удалось сохранить";
+      }
+    }
+
+    const STATUS_LABEL = { new:"Новая", confirmed:"Подтверждена", done:"Выполнена", cancelled:"Отменена" };
+    function whenText(a){
+      if (a.appointment_at) return new Date(a.appointment_at).toLocaleString("ru-RU",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});
+      if (a.preferred_date) return new Date(a.preferred_date).toLocaleDateString("ru-RU",{day:"2-digit",month:"long",year:"numeric"}) + " · время уточняется";
+      return "время уточняется";
+    }
+    function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+    async function loadAppointments() {
+      const r = await api({ action: "appointments", token: token() });
+      if (r.status === 401) { logout(); return; }
+      const list = (r.data.items || []);
+      const wrap = get("apptList");
+      if (!list.length) { wrap.innerHTML = '<div class="empty">Пока нет записей.<br>Запишитесь на приём на главной странице.</div>'; return; }
+      wrap.innerHTML = list.map(a => {
+        const st = a.status || "new";
+        const who = esc(a.specialty || "Специалист") + (a.doctor_name ? " · " + esc(a.doctor_name) : "");
+        return `<div class="appt">
+          <div class="when">🗓️ ${whenText(a)}</div>
+          <div class="meta">${who}${a.service ? " · " + esc(a.service) : ""}</div>
+          <span class="pill ${st}">${STATUS_LABEL[st] || st}</span>
+        </div>`;
+      }).join("");
+    }
+
+    function logout() {
+      localStorage.removeItem("patient_token");
+      pendingPhone = "";
+      get("logoutBtn").style.display = "none";
+      show("step-phone");
+      get("phone").value = ""; get("phoneMsg").textContent = "";
+    }
+
+    /* ---------- Автовход по сохранённому токену ---------- */
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (token()) {
+        const r = await api({ action: "get", token: token() });
+        if (r.data.ok) { openCabinet(r.data.profile); return; }
+        localStorage.removeItem("patient_token");
+      }
+      show("step-phone");
+    });
+  </script>
 </body>
 </html>
