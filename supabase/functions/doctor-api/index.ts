@@ -27,6 +27,35 @@ function json(body: unknown, status = 200) {
 
 const ALLOWED_STATUS = ["new", "confirmed", "done", "cancelled"];
 
+// ---- Защита от подбора пароля (brute-force) ----
+const MAX_FAILS = 8;        // сколько неверных попыток подряд допустимо
+const LOCK_MINUTES = 15;    // на сколько минут блокируем после превышения
+
+function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for") || "";
+  return xff.split(",")[0].trim() || "unknown";
+}
+// Троттлинг «безопасно падает» (fail-open): сбой счётчика не ломает вход.
+async function isBlocked(key: string): Promise<boolean> {
+  try {
+    const { data } = await db.from("auth_throttle").select("blocked_until").eq("key", key).maybeSingle();
+    if (!data?.blocked_until) return false;
+    return new Date(data.blocked_until).getTime() > Date.now();
+  } catch { return false; }
+}
+async function recordFail(key: string): Promise<void> {
+  try {
+    const { data } = await db.from("auth_throttle").select("fails").eq("key", key).maybeSingle();
+    const fails = (data?.fails ?? 0) + 1;
+    const patch: Record<string, unknown> = { key, fails, updated_at: new Date().toISOString() };
+    if (fails >= MAX_FAILS) patch.blocked_until = new Date(Date.now() + LOCK_MINUTES * 60000).toISOString();
+    await db.from("auth_throttle").upsert(patch);
+  } catch { /* игнорируем */ }
+}
+async function recordSuccess(key: string): Promise<void> {
+  try { await db.from("auth_throttle").delete().eq("key", key); } catch { /* игнорируем */ }
+}
+
 // Проверка пароля → возвращает профиль врача или null
 async function authDoctor(doctorId: number, password: string) {
   if (!doctorId || !password) return null;
@@ -63,8 +92,18 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch { /* пусто */ }
 
+  // Блокируем подбор: отдельный счётчик на каждого врача + адрес
+  const tkey = "doctor:" + Number(body.doctorId || 0) + ":" + clientIp(req);
+  if (await isBlocked(tkey)) {
+    return json({ error: "Слишком много попыток входа. Попробуйте через 15 минут." }, 429);
+  }
+
   const doc = await authDoctor(Number(body.doctorId), body.password);
-  if (!doc) return json({ error: "Неверный пароль" }, 401);
+  if (!doc) {
+    await recordFail(tkey);
+    return json({ error: "Неверный пароль" }, 401);
+  }
+  await recordSuccess(tkey); // верный пароль — сбрасываем счётчик
 
   if (body.action === "login" || body.action === "list") {
     const items = await appointmentsFor(doc);
