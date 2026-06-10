@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Админ-панель — Клиника «Здоровье»</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --primary:#1f6bff; --primary-600:#1556d6; --accent:#12b8a6; --ink:#0f172a; --muted:#64748b; --line:#e7eef7; --bg:#f4f8fd; --card-shadow:0 14px 40px rgba(15,45,90,.08); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
+    .nav { background:#fff; border-bottom:1px solid var(--line); }
+    .nav-inner { max-width:1280px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; font-size:18px; }
+    .brand .logo { width:38px; height:38px; display:grid; place-items:center; border-radius:11px; color:#fff; font-size:20px; background:linear-gradient(135deg,var(--primary),var(--accent)); }
+    .brand b { color:var(--primary); }
+    .tag { font-size:12px; font-weight:700; color:var(--primary); background:rgba(31,107,255,.1); padding:4px 10px; border-radius:999px; }
+    .logout { border:none; background:#f1f5f9; color:#334155; font-weight:700; font-size:14px; padding:9px 16px; border-radius:10px; cursor:pointer; font-family:inherit; }
+    .logout:hover { background:#e2e8f0; }
+
+    /* Логин */
+    .login-wrap { min-height:calc(100vh - 70px); display:grid; place-items:center; padding:22px; }
+    .login { background:#fff; border:1px solid var(--line); border-radius:20px; padding:36px; box-shadow:var(--card-shadow); width:100%; max-width:400px; text-align:center; }
+    .login .ic { font-size:40px; }
+    .login h1 { font-size:24px; margin:10px 0 6px; }
+    .login p { color:var(--muted); font-size:14px; margin-bottom:20px; }
+    .login input { width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:15px; font-family:inherit; outline:none; }
+    .login input:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
+    .login button { width:100%; margin-top:14px; padding:14px; border:none; color:#fff; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; background:linear-gradient(135deg,var(--primary),var(--primary-600)); }
+    .login .err { color:#dc2626; font-size:14px; margin-top:12px; min-height:18px; }
+
+    /* Дашборд */
+    .dash { max-width:1280px; margin:24px auto; padding:0 22px; display:none; }
+    .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:var(--card-shadow); }
+    .card .n { font-size:28px; font-weight:800; }
+    .card .l { color:var(--muted); font-size:13px; margin-top:2px; }
+    .card.t-new .n { color:#2563eb; } .card.t-confirmed .n { color:#16a34a; } .card.t-done .n { color:#0891b2; } .card.t-cancelled .n { color:#dc2626; }
+
+    .tools { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+    .tools input, .tools select { padding:12px 14px; border:1.5px solid #e2e8f0; border-radius:11px; font-size:14px; outline:none; font-family:inherit; background:#fff; }
+    .tools input { flex:1; min-width:220px; }
+    .tools input:focus, .tools select:focus { border-color:var(--primary); }
+    .refresh { border:none; background:var(--primary); color:#fff; font-weight:700; padding:0 18px; border-radius:11px; cursor:pointer; font-family:inherit; }
+
+    .table-wrap { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:var(--card-shadow); overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; min-width:900px; }
+    th, td { padding:14px 16px; text-align:left; border-bottom:1px solid var(--line); font-size:14px; vertical-align:top; }
+    th { background:#f8fafc; color:#475569; font-weight:700; white-space:nowrap; position:sticky; top:0; }
+    tbody tr:hover { background:#f8fbff; }
+    .who b { display:block; } .who span { color:var(--muted); font-size:13px; }
+    .src { font-size:12px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+    .src.site { background:#eff6ff; color:#1d4ed8; } .src.telegram { background:#e0f2fe; color:#0369a1; }
+    .stsel { padding:8px 10px; border-radius:9px; border:1.5px solid #e2e8f0; font-family:inherit; font-weight:700; font-size:13px; cursor:pointer; }
+    .stsel.new { color:#2563eb; border-color:#bfdbfe; background:#eff6ff; }
+    .stsel.confirmed { color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; }
+    .stsel.done { color:#0891b2; border-color:#a5f3fc; background:#ecfeff; }
+    .stsel.cancelled { color:#dc2626; border-color:#fecaca; background:#fef2f2; }
+    .muted { color:var(--muted); }
+    .empty { text-align:center; color:var(--muted); padding:40px; }
+
+    @media (max-width:760px){ .cards { grid-template-columns:repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="logo">✚</span><span>Клиника <b>«Здоровье»</b></span> <span class="tag">Админ-панель</span></div>
+      <button class="logout" id="logoutBtn" onclick="logout()" style="display:none">Выйти</button>
+    </div>
+  </nav>
+
+  <!-- Экран входа -->
+  <div class="login-wrap" id="loginWrap">
+    <div class="login">
+      <div class="ic">🔒</div>
+      <h1>Вход в админ-панель</h1>
+      <p>Введите пароль, чтобы увидеть записи пациентов.</p>
+      <input id="pw" type="password" placeholder="Пароль" onkeydown="if(event.key==='Enter')login()" />
+      <button onclick="login()">Войти</button>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <!-- Дашборд -->
+  <div class="dash" id="dash">
+    <div class="cards">
+      <div class="card t-new"><div class="n" id="c-new">0</div><div class="l">Новые</div></div>
+      <div class="card t-confirmed"><div class="n" id="c-confirmed">0</div><div class="l">Подтверждённые</div></div>
+      <div class="card t-done"><div class="n" id="c-done">0</div><div class="l">Выполненные</div></div>
+      <div class="card t-cancelled"><div class="n" id="c-cancelled">0</div><div class="l">Отменённые</div></div>
+    </div>
+
+    <div class="tools">
+      <input id="search" placeholder="Поиск: имя, телефон, специалист…" oninput="render()" />
+      <select id="fStatus" onchange="render()">
+        <option value="">Все статусы</option>
+        <option value="new">Новые</option>
+        <option value="confirmed">Подтверждённые</option>
+        <option value="done">Выполненные</option>
+        <option value="cancelled">Отменённые</option>
+      </select>
+      <select id="fSource" onchange="render()">
+        <option value="">Все источники</option>
+        <option value="site">Сайт</option>
+        <option value="telegram">Telegram</option>
+      </select>
+      <button class="refresh" onclick="loadList()">↻ Обновить</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Когда</th><th>Пациент</th><th>Специалист / услуга</th><th>Источник</th><th>Комментарий</th><th>Статус</th></tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="6" class="empty">Загрузка…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
+    const ADMIN_FN_URL = SUPABASE_URL + "/functions/v1/admin-api";
+    let items = [];
+
+    function pw() { return sessionStorage.getItem("admin_pw") || ""; }
+
+    async function api(payload) {
+      const resp = await fetch(ADMIN_FN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw(), ...payload }),
+      });
+      return { status: resp.status, data: await resp.json().catch(() => ({})) };
+    }
+
+    async function login() {
+      const val = document.getElementById("pw").value.trim();
+      const err = document.getElementById("err");
+      err.textContent = "Проверяем…";
+      sessionStorage.setItem("admin_pw", val);
+      const r = await api({ action: "list" });
+      if (r.status === 200) {
+        err.textContent = "";
+        showDash(r.data.items || []);
+      } else {
+        sessionStorage.removeItem("admin_pw");
+        err.textContent = r.status === 401 ? "Неверный пароль" : "Ошибка входа, попробуйте позже";
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem("admin_pw");
+      location.reload();
+    }
+
+    function showDash(list) {
+      items = list;
+      document.getElementById("loginWrap").style.display = "none";
+      document.getElementById("dash").style.display = "block";
+      document.getElementById("logoutBtn").style.display = "inline-block";
+      render();
+    }
+
+    async function loadList() {
+      const r = await api({ action: "list" });
+      if (r.status === 200) { items = r.data.items || []; render(); }
+      else if (r.status === 401) logout();
+    }
+
+    const STATUS_LABEL = { new: "Новая", confirmed: "Подтверждена", done: "Выполнена", cancelled: "Отменена" };
+    const SRC_LABEL = { site: "🌐 Сайт", telegram: "✈️ Telegram" };
+
+    function whenText(a) {
+      if (a.appointment_at) {
+        const d = new Date(a.appointment_at);
+        return d.toLocaleString("ru-RU", { timeZone: "Europe/Moscow", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      }
+      if (a.preferred_date) return new Date(a.preferred_date).toLocaleDateString("ru-RU") + " <span class='muted'>(время уточняется)</span>";
+      return "<span class='muted'>не указано</span>";
+    }
+    function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+    async function setStatus(id, status, sel) {
+      sel.className = "stsel " + status;
+      const r = await api({ action: "status", id, status });
+      if (r.status !== 200) { alert("Не удалось сохранить статус"); return; }
+      const it = items.find(x => x.id === id); if (it) it.status = status;
+      updateCounters();
+    }
+
+    function updateCounters() {
+      const c = { new:0, confirmed:0, done:0, cancelled:0 };
+      items.forEach(a => { const s = a.status || "new"; if (c[s] != null) c[s]++; });
+      ["new","confirmed","done","cancelled"].forEach(s => document.getElementById("c-"+s).textContent = c[s]);
+    }
+
+    function render() {
+      updateCounters();
+      const q = document.getElementById("search").value.trim().toLowerCase();
+      const fs = document.getElementById("fStatus").value;
+      const fsrc = document.getElementById("fSource").value;
+
+      const list = items.filter(a => {
+        const st = a.status || "new";
+        if (fs && st !== fs) return false;
+        if (fsrc && (a.source || "site") !== fsrc) return false;
+        if (q) {
+          const hay = [a.full_name, a.phone, a.specialty, a.doctor_name, a.service].join(" ").toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const tbody = document.getElementById("rows");
+      if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">Записей не найдено.</td></tr>'; return; }
+
+      tbody.innerHTML = list.map(a => {
+        const st = a.status || "new";
+        const src = a.source || "site";
+        const spec = esc(a.specialty || "") + (a.doctor_name ? `<br><span class='muted'>${esc(a.doctor_name)}</span>` : "") + (a.service ? `<br><span class='muted'>${esc(a.service)}</span>` : "");
+        const opts = ["new","confirmed","done","cancelled"].map(s => `<option value="${s}" ${s===st?"selected":""}>${STATUS_LABEL[s]}</option>`).join("");
+        return `
+        <tr>
+          <td>${whenText(a)}</td>
+          <td class="who"><b>${esc(a.full_name||"—")}</b><span>${esc(a.phone||"")}</span></td>
+          <td>${spec || "—"}</td>
+          <td><span class="src ${src}">${SRC_LABEL[src]||src}</span></td>
+          <td class="muted">${esc(a.comment||"")}</td>
+          <td><select class="stsel ${st}" onchange="setStatus(${a.id}, this.value, this)">${opts}</select></td>
+        </tr>`;
+      }).join("");
+    }
+
+    // Автовход, если пароль уже введён в этой вкладке
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (pw()) {
+        const r = await api({ action: "list" });
+        if (r.status === 200) showDash(r.data.items || []);
+        else sessionStorage.removeItem("admin_pw");
+      }
+    });
+  </script>
+</body>
+</html>
