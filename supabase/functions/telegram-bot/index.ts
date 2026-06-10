@@ -84,19 +84,18 @@ async function sha256(s: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Вход в личный кабинет: клиент пришёл по ссылке t.me/бот?start=code_<token>.
-// Узнаём телефон по токену, привязываем чат и отправляем код для входа на сайте.
-async function sendLoginCode(chat_id: number, token: string) {
-  const { data: row } = await db.from("tg_login").select("phone, expires_at").eq("token", token).maybeSingle();
-  if (!row || new Date(row.expires_at).getTime() < Date.now()) {
+// Вход в личный кабинет: телефон передаётся прямо в ссылке t.me/бот?start=p_<10цифр>.
+// ПРИВЯЗКА: записываем chat_id ↔ phone (telegram_users), генерируем код и шлём в чат.
+async function sendLoginCodeForPhone(chat_id: number, phoneRaw: string) {
+  const phone = onlyDigits(phoneRaw).slice(-10);
+  if (phone.length !== 10) {
     return sendMessage(
       chat_id,
-      "Ссылка для входа устарела. Вернитесь на сайт и снова нажмите «Перейти в Telegram для подтверждения кода».",
+      "Не удалось распознать номер телефона. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.",
       { reply_markup: mainMenu },
     );
   }
-  const phone = row.phone;
-  // Привязываем телефон к этому чату (для будущих подтверждений и напоминаний)
+  // Привязываем телефон к этому чату (для входа + будущих подтверждений и напоминаний)
   await saveState(chat_id, { phone });
   // Генерируем код и сохраняем его хеш — сайт проверит ввод по таблице patient_codes
   const code = String(Math.floor(100000 + Math.random() * 900000));
@@ -108,12 +107,21 @@ async function sendLoginCode(chat_id: number, token: string) {
     expires_at: new Date(Date.now() + 5 * 60000).toISOString(),
     created_at: new Date().toISOString(),
   });
-  await db.from("tg_login").delete().eq("token", token);
   return sendMessage(
     chat_id,
-    `🔐 <b>Код для входа в личный кабинет</b>\n\nВаш код: <b>${code}</b>\n\nВведите его на сайте. Код действует 5 минут. Никому не сообщайте его.`,
+    `🔐 <b>Код для входа в личный кабинет</b>\n\nВаш код: <b>${code}</b>\n\nВведите его на сайте, чтобы войти. Код действует 5 минут. Никому не сообщайте его.`,
     { reply_markup: mainMenu },
   );
+}
+
+// Старый способ (ссылка с токеном code_<token>) — оставлен для совместимости.
+async function sendLoginCode(chat_id: number, token: string) {
+  const { data: row } = await db.from("tg_login").select("phone, expires_at").eq("token", token).maybeSingle();
+  if (!row || new Date(row.expires_at).getTime() < Date.now()) {
+    return sendMessage(chat_id, "Ссылка для входа устарела. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.", { reply_markup: mainMenu });
+  }
+  await db.from("tg_login").delete().eq("token", token);
+  return sendLoginCodeForPhone(chat_id, row.phone);
 }
 
 // ---- Списки врачей и специальностей из базы ----
@@ -458,7 +466,11 @@ async function handleUpdate(update: any) {
     const user = await getUser(chat_id);
     // создаём запись о пользователе, если её ещё нет
     if (!user) await saveState(chat_id, { state: {} });
-    // Вход в личный кабинет: пришёл по ссылке с сайта (start=code_<token>)
+    // Вход в личный кабинет: телефон зашит в ссылке (start=p_<10цифр>)
+    if (param.startsWith("p_")) {
+      return sendLoginCodeForPhone(chat_id, param.slice(2));
+    }
+    // Старый способ (start=code_<token>) — на случай старых ссылок
     if (param.startsWith("code_")) {
       return sendLoginCode(chat_id, param.slice(5));
     }

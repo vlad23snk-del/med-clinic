@@ -32,7 +32,7 @@
     input:focus, select:focus, textarea:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
     textarea { min-height:84px; resize:vertical; line-height:1.5; }
     .ch-buttons { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
-    .ch { display:flex; align-items:center; justify-content:center; gap:9px; padding:14px; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; color:#fff; transition:transform .15s, box-shadow .15s; }
+    .ch { display:flex; align-items:center; justify-content:center; gap:9px; padding:14px; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; color:#fff; text-decoration:none; text-align:center; transition:transform .15s, box-shadow .15s; }
     .ch:hover { transform:translateY(-1px); }
     .ch:disabled { opacity:.6; cursor:default; transform:none; }
     .ch.tg { background:linear-gradient(135deg,#229ED9,#2AABEE); }
@@ -93,12 +93,12 @@
       <h1>Личный кабинет</h1>
       <p class="sub">Введите номер телефона — пришлём код для входа.</p>
       <label for="phone">Номер телефона</label>
-      <input id="phone" type="tel" placeholder="+7 (___) ___-__-__" autocomplete="tel" />
+      <input id="phone" type="tel" placeholder="+7 (___) ___-__-__" autocomplete="tel" oninput="updateTgLink()" />
       <div class="ch-buttons">
-        <button class="ch tg" id="btnTg" onclick="goTelegram()">
+        <a class="ch tg" id="btnTg" target="_blank" rel="noopener" href="#" onclick="return telegramClick(event)">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
-          Перейти в Telegram для подтверждения кода
-        </button>
+          Войти с помощью Telegram
+        </a>
         <button class="ch wa" id="btnWa" onclick="requestCode('whatsapp')">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.9 4.43-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.27-1.38a9.9 9.9 0 004.77 1.22h.01c5.46 0 9.9-4.43 9.9-9.9 0-2.64-1.03-5.13-2.9-7C17.18 3.03 14.69 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.32-1.95 1.36-.5.04-.97.22-3.28-.68-2.77-1.09-4.5-3.93-4.64-4.11-.13-.18-1.1-1.46-1.1-2.79 0-1.33.7-1.98.95-2.25.24-.27.53-.34.71-.34l.5.01c.16.01.38-.06.59.45.24.58.81 2 .88 2.14.07.14.12.31.02.49-.09.18-.14.29-.27.45l-.41.48c-.13.13-.27.28-.12.54.16.27.69 1.14 1.49 1.85 1.02.91 1.88 1.2 2.15 1.33.27.13.42.11.58-.07.16-.18.67-.78.85-1.05.18-.27.36-.22.6-.13.24.09 1.55.73 1.81.86.27.13.45.2.51.31.07.11.07.63-.17 1.31z"/></svg>
           Код в WhatsApp
@@ -205,25 +205,30 @@
     function token() { return localStorage.getItem("patient_token") || ""; }
     function show(id) { ["step-phone","step-code","cabinet"].forEach(s => get(s).classList.toggle("hide", s !== id)); }
 
-    /* ---------- Шаг 1а: вход через Telegram «Старт» ---------- */
-    async function goTelegram() {
-      const phone = get("phone").value.trim();
+    /* ---------- Шаг 1а: вход через Telegram (кнопка-ссылка) ---------- */
+    // Номер телефона зашиваем прямо в ссылку на бота: t.me/бот?start=p_<10цифр>.
+    // Это НАСТОЯЩАЯ ссылка (а не window.open) — браузер её не блокирует.
+    function updateTgLink() {
+      const digits = get("phone").value.replace(/\D/g, "").slice(-10);
+      const a = get("btnTg");
+      if (digits.length === 10) a.href = `https://t.me/${BOT_USERNAME}?start=p_${digits}`;
+      else a.removeAttribute("href");
+    }
+
+    function telegramClick(e) {
+      const digits = get("phone").value.replace(/\D/g, "").slice(-10);
       const msg = get("phoneMsg");
-      if (phone.replace(/\D/g, "").length < 10) { msg.className = "msg err"; msg.textContent = "Введите корректный номер телефона"; return; }
-      pendingPhone = phone;
-      get("btnTg").disabled = true; get("btnWa").disabled = true;
-      msg.className = "msg"; msg.textContent = "Открываем Telegram…";
-      const r = await api({ action: "start_telegram", phone });
-      get("btnTg").disabled = false; get("btnWa").disabled = false;
-      if (r.data.ok && r.data.token) {
-        // открываем бота — клиент нажмёт «Старт», и код придёт ему в чат
-        window.open(`https://t.me/${BOT_USERNAME}?start=code_${r.data.token}`, "_blank");
-        msg.className = "msg"; msg.textContent = "";
-        get("codeSub").innerHTML = "Откройте Telegram и нажмите <b>«Старт»</b> — код придёт вам в чат с ботом. Затем введите его здесь.";
-        show("step-code"); get("code").focus();
-      } else {
-        msg.className = "msg err"; msg.textContent = r.data.error || "Не удалось начать вход";
+      if (digits.length !== 10) {
+        e.preventDefault();
+        msg.className = "msg err"; msg.textContent = "Сначала введите корректный номер телефона";
+        return false;
       }
+      pendingPhone = get("phone").value;
+      msg.textContent = "";
+      get("codeSub").innerHTML = "В Telegram нажмите <b>«Старт»</b> (или «Начать») — вам придёт код из 6 цифр. Введите его здесь.";
+      // ссылка откроет Telegram в новой вкладке, а здесь покажем ввод кода
+      show("step-code"); get("code").focus();
+      return true; // разрешаем переход по ссылке
     }
 
     /* ---------- Шаг 1: запрос кода (WhatsApp) ---------- */
