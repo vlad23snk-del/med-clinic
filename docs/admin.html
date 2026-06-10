@@ -30,6 +30,23 @@
     .login button { width:100%; margin-top:14px; padding:14px; border:none; color:#fff; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; background:linear-gradient(135deg,var(--primary),var(--primary-600)); }
     .login .err { color:#dc2626; font-size:14px; margin-top:12px; min-height:18px; }
 
+    /* Экран выбора роли */
+    .choose { background:#fff; border:1px solid var(--line); border-radius:22px; padding:36px; box-shadow:var(--card-shadow); width:100%; max-width:560px; text-align:center; }
+    .choose .ic { font-size:42px; }
+    .choose h1 { font-size:24px; margin:10px 0 6px; }
+    .choose p { color:var(--muted); font-size:14px; margin-bottom:24px; }
+    .choose-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .choice { display:flex; flex-direction:column; align-items:center; gap:7px; padding:26px 18px; border-radius:18px; border:1.5px solid var(--line); background:#fff; cursor:pointer; font-family:inherit; transition:transform .2s, box-shadow .2s, border-color .2s; text-decoration:none; }
+    .choice:hover { transform:translateY(-4px); box-shadow:var(--card-shadow); }
+    .choice .cic { font-size:36px; }
+    .choice b { font-size:16px; color:var(--ink); }
+    .choice .cdesc { font-size:12px; color:var(--muted); }
+    .choice.admin:hover { border-color:rgba(31,107,255,.5); }
+    .choice.doc:hover { border-color:rgba(18,184,166,.5); }
+    .backlink { display:inline-block; margin-top:16px; color:var(--muted); font-size:13px; text-decoration:none; }
+    .backlink:hover { color:var(--primary); }
+    @media (max-width:520px){ .choose-grid { grid-template-columns:1fr; } }
+
     /* Дашборд */
     .dash { max-width:1280px; margin:24px auto; padding:0 22px; display:none; }
     .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px; }
@@ -71,15 +88,37 @@
     </div>
   </nav>
 
-  <!-- Экран входа -->
-  <div class="login-wrap" id="loginWrap">
+  <!-- Экран выбора роли -->
+  <div class="login-wrap" id="chooser">
+    <div class="choose">
+      <div class="ic">🏥</div>
+      <h1>Вход для сотрудников</h1>
+      <p>Выберите, как вы хотите войти.</p>
+      <div class="choose-grid">
+        <button class="choice admin" onclick="chooseAdmin()">
+          <span class="cic">🛡️</span>
+          <b>Администратор клиники</b>
+          <span class="cdesc">Все записи, статусы, управление</span>
+        </button>
+        <a class="choice doc" href="vrach.html">
+          <span class="cic">👨‍⚕️</span>
+          <b>Кабинет врача</b>
+          <span class="cdesc">Свой профиль и свои пациенты</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Экран входа администратора -->
+  <div class="login-wrap" id="loginWrap" style="display:none">
     <div class="login">
-      <div class="ic">🔒</div>
-      <h1>Вход в админ-панель</h1>
+      <div class="ic">🛡️</div>
+      <h1>Вход администратора</h1>
       <p>Введите пароль, чтобы увидеть записи пациентов.</p>
       <input id="pw" type="password" placeholder="Пароль" onkeydown="if(event.key==='Enter')login()" />
       <button onclick="login()">Войти</button>
       <div class="err" id="err"></div>
+      <a class="backlink" href="#" onclick="backToChoose();return false">← Назад к выбору</a>
     </div>
   </div>
 
@@ -155,8 +194,19 @@
       location.reload();
     }
 
+    function chooseAdmin() {
+      document.getElementById("chooser").style.display = "none";
+      document.getElementById("loginWrap").style.display = "grid";
+      document.getElementById("pw").focus();
+    }
+    function backToChoose() {
+      document.getElementById("loginWrap").style.display = "none";
+      document.getElementById("chooser").style.display = "grid";
+    }
+
     function showDash(list) {
       items = list;
+      document.getElementById("chooser").style.display = "none";
       document.getElementById("loginWrap").style.display = "none";
       document.getElementById("dash").style.display = "block";
       document.getElementById("logoutBtn").style.display = "inline-block";
