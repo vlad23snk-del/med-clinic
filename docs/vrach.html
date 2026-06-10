@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Кабинет врача — Клиника «Здоровье»</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --primary:#1f6bff; --primary-600:#1556d6; --accent:#12b8a6; --ink:#0f172a; --muted:#64748b; --line:#e7eef7; --bg:#f4f8fd; --card-shadow:0 14px 40px rgba(15,45,90,.08); --radius:20px; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased; }
+    .nav { background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50; }
+    .nav-inner { max-width:1080px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; font-size:18px; }
+    .brand .logo { width:38px; height:38px; display:grid; place-items:center; border-radius:11px; color:#fff; font-size:20px; background:linear-gradient(135deg,var(--primary),var(--accent)); }
+    .brand b { color:var(--primary); }
+    .tag { font-size:12px; font-weight:700; color:var(--accent); background:rgba(18,184,166,.12); padding:4px 10px; border-radius:999px; }
+    .logout { border:none; background:#f1f5f9; color:#334155; font-weight:700; font-size:14px; padding:9px 16px; border-radius:10px; cursor:pointer; font-family:inherit; display:none; }
+    .logout:hover { background:#e2e8f0; }
+
+    /* Логин */
+    .login-wrap { min-height:calc(100vh - 70px); display:grid; place-items:center; padding:22px; }
+    .login { background:#fff; border:1px solid var(--line); border-radius:22px; padding:36px; box-shadow:var(--card-shadow); width:100%; max-width:420px; text-align:center; }
+    .login .ic { font-size:42px; }
+    .login h1 { font-size:24px; margin:10px 0 6px; }
+    .login p { color:var(--muted); font-size:14px; margin-bottom:22px; }
+    .login label { display:block; text-align:left; font-weight:600; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+    .login select, .login input { width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:15px; font-family:inherit; outline:none; background:#fff; }
+    .login select:focus, .login input:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
+    .login button { width:100%; margin-top:18px; padding:14px; border:none; color:#fff; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; background:linear-gradient(135deg,var(--primary),var(--primary-600)); }
+    .login .err { color:#dc2626; font-size:14px; margin-top:12px; min-height:18px; }
+
+    /* Кабинет */
+    .cab { max-width:1080px; margin:24px auto; padding:0 22px; display:none; }
+    .hero { position:relative; overflow:hidden; color:#fff; border-radius:24px; padding:30px; display:flex; gap:24px; flex-wrap:wrap; align-items:center;
+      background:radial-gradient(500px 300px at 100% 0%, rgba(18,184,166,.55), transparent 60%), linear-gradient(135deg,#1f6bff,#2563eb 55%,#0ea5e9); box-shadow:0 20px 50px rgba(31,107,255,.28); }
+    .hero .photo { width:104px; height:104px; border-radius:22px; object-fit:cover; flex-shrink:0; background:rgba(255,255,255,.2); border:3px solid rgba(255,255,255,.35); display:grid; place-items:center; font-size:40px; font-weight:800; }
+    .hero .info { position:relative; z-index:1; flex:1; min-width:200px; }
+    .hero h1 { font-size:28px; font-weight:800; letter-spacing:-.02em; }
+    .hero .badge { display:inline-block; margin-top:6px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.35); padding:6px 14px; border-radius:999px; font-weight:700; font-size:14px; }
+
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:18px 0; }
+    .stat { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:var(--card-shadow); }
+    .stat .n { font-size:28px; font-weight:800; color:var(--primary); }
+    .stat .l { color:var(--muted); font-size:13px; }
+    .stat.today .n { color:var(--accent); }
+
+    .block { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:26px; box-shadow:var(--card-shadow); margin-bottom:18px; }
+    .block h2 { font-size:20px; margin-bottom:12px; font-weight:800; }
+    .block .lead { color:#475569; }
+    .edu { display:flex; gap:12px; align-items:flex-start; color:#475569; margin-top:10px; }
+    .edu .ico { font-size:22px; }
+
+    .tools { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+    .tools input, .tools select { padding:12px 14px; border:1.5px solid #e2e8f0; border-radius:11px; font-size:14px; outline:none; font-family:inherit; background:#fff; }
+    .tools input { flex:1; min-width:200px; }
+    .tools input:focus, .tools select:focus { border-color:var(--primary); }
+
+    .plist { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+    .pcard { border:1px solid var(--line); border-radius:16px; padding:18px; background:#fff; display:flex; flex-direction:column; gap:8px; transition:transform .2s, box-shadow .2s; }
+    .pcard:hover { transform:translateY(-3px); box-shadow:var(--card-shadow); }
+    .pcard.today { border-color:rgba(18,184,166,.5); box-shadow:0 0 0 3px rgba(18,184,166,.12); }
+    .pcard .when { font-weight:800; font-size:16px; display:flex; align-items:center; gap:8px; }
+    .pcard .when .badge-today { font-size:11px; font-weight:700; color:#0f766e; background:#ccfbf1; padding:2px 8px; border-radius:999px; }
+    .pcard .pname { font-weight:700; }
+    .pcard .row { color:var(--muted); font-size:14px; }
+    .pcard .src { display:inline-block; font-size:12px; font-weight:700; padding:3px 9px; border-radius:999px; }
+    .src.site { background:#eff6ff; color:#1d4ed8; } .src.telegram { background:#e0f2fe; color:#0369a1; }
+    .stsel { margin-top:4px; padding:9px 10px; border-radius:10px; border:1.5px solid #e2e8f0; font-family:inherit; font-weight:700; font-size:13px; cursor:pointer; }
+    .stsel.new { color:#2563eb; border-color:#bfdbfe; background:#eff6ff; }
+    .stsel.confirmed { color:#16a34a; border-color:#bbf7d0; background:#f0fdf4; }
+    .stsel.done { color:#0891b2; border-color:#a5f3fc; background:#ecfeff; }
+    .stsel.cancelled { color:#dc2626; border-color:#fecaca; background:#fef2f2; }
+    .empty { color:var(--muted); padding:30px; text-align:center; grid-column:1/-1; }
+
+    @media (max-width:620px){ .stats { grid-template-columns:1fr; } .plist { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="logo">✚</span><span>Клиника <b>«Здоровье»</b></span> <span class="tag">Кабинет врача</span></div>
+      <button class="logout" id="logoutBtn" onclick="logout()">Выйти</button>
+    </div>
+  </nav>
+
+  <!-- Вход -->
+  <div class="login-wrap" id="loginWrap">
+    <div class="login">
+      <div class="ic">👨‍⚕️</div>
+      <h1>Кабинет врача</h1>
+      <p>Выберите себя и введите личный пароль.</p>
+      <label for="docSelect">Врач</label>
+      <select id="docSelect"><option value="">Загрузка списка…</option></select>
+      <label for="pw">Пароль</label>
+      <input id="pw" type="password" placeholder="Личный пароль" onkeydown="if(event.key==='Enter')login()" />
+      <button onclick="login()">Войти</button>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <!-- Кабинет -->
+  <div class="cab" id="cab"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i_LZdRnHXMYNFf608V86GA_ohVuGfAH";
+    const DOC_FN_URL = SUPABASE_URL + "/functions/v1/doctor-api";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let state = { items: [], doctor: null };
+    const get = id => document.getElementById(id);
+    const creds = () => ({ doctorId: Number(sessionStorage.getItem("dr_id") || 0), password: sessionStorage.getItem("dr_pw") || "" });
+
+    async function api(payload) {
+      const c = creds();
+      const resp = await fetch(DOC_FN_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...c, ...payload }) });
+      return { status: resp.status, data: await resp.json().catch(() => ({})) };
+    }
+
+    // Список врачей для выпадающего меню (имена публичны)
+    async function loadDoctorList() {
+      const { data } = await sb.from("doctors").select("id, name, specialty").order("name");
+      const sel = get("docSelect");
+      sel.innerHTML = '<option value="">— Выберите себя —</option>' +
+        (data || []).map(d => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join("");
+    }
+
+    async function login() {
+      const id = get("docSelect").value;
+      const pw = get("pw").value.trim();
+      const err = get("err");
+      if (!id) { err.textContent = "Выберите врача из списка"; return; }
+      err.textContent = "Проверяем…";
+      sessionStorage.setItem("dr_id", id);
+      sessionStorage.setItem("dr_pw", pw);
+      const r = await api({ action: "login" });
+      if (r.status === 200) { err.textContent = ""; showCab(r.data); }
+      else { sessionStorage.removeItem("dr_pw"); err.textContent = r.status === 401 ? "Неверный пароль" : "Ошибка входа"; }
+    }
+
+    function logout() { sessionStorage.removeItem("dr_id"); sessionStorage.removeItem("dr_pw"); location.reload(); }
+
+    function esc(s){ return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+    function initials(n){ return (n||"?").trim().charAt(0).toUpperCase(); }
+
+    const STATUS_LABEL = { new:"Новая", confirmed:"Подтверждена", done:"Выполнена", cancelled:"Отменена" };
+    const SRC_LABEL = { site:"🌐 Сайт", telegram:"✈️ Telegram" };
+
+    function todayKey(){ return new Date().toLocaleDateString("ru-RU",{timeZone:"Europe/Moscow"}); }
+    function apptDateKey(a){
+      if (a.appointment_at) return new Date(a.appointment_at).toLocaleDateString("ru-RU",{timeZone:"Europe/Moscow"});
+      if (a.preferred_date) return new Date(a.preferred_date).toLocaleDateString("ru-RU");
+      return null;
+    }
+    function whenText(a){
+      if (a.appointment_at) return new Date(a.appointment_at).toLocaleString("ru-RU",{timeZone:"Europe/Moscow",weekday:"short",day:"2-digit",month:"long",hour:"2-digit",minute:"2-digit"});
+      if (a.preferred_date) return new Date(a.preferred_date).toLocaleDateString("ru-RU",{day:"2-digit",month:"long"}) + " · время уточняется";
+      return "время не указано";
+    }
+
+    function showCab(data) {
+      state.doctor = data.doctor; state.items = data.items || [];
+      get("loginWrap").style.display = "none";
+      get("cab").style.display = "block";
+      get("logoutBtn").style.display = "inline-block";
+
+      const d = data.doctor;
+      const photo = d.photo_url ? `<img class="photo" src="${esc(d.photo_url)}" alt="">` : `<div class="photo">${initials(d.name)}</div>`;
+      get("cab").innerHTML = `
+        <div class="hero">
+          ${photo}
+          <div class="info">
+            <h1>${esc(d.name)}</h1>
+            <span class="badge">${esc(d.specialty)}</span>
+            ${d.experience_years ? `<span class="badge" style="margin-left:8px">🩺 Стаж ${d.experience_years} лет</span>` : ""}
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="n" id="s-total">0</div><div class="l">Всего записей</div></div>
+          <div class="stat today"><div class="n" id="s-today">0</div><div class="l">Сегодня</div></div>
+          <div class="stat"><div class="n" id="s-upcoming">0</div><div class="l">Предстоящих</div></div>
+        </div>
+
+        ${d.description || d.education ? `
+        <div class="block">
+          <h2>О себе</h2>
+          ${d.description ? `<p class="lead">${esc(d.description)}</p>` : ""}
+          ${d.education ? `<div class="edu"><span class="ico">🎓</span><p>${esc(d.education)}</p></div>` : ""}
+        </div>` : ""}
+
+        <div class="block">
+          <h2>Мои пациенты</h2>
+          <div class="tools">
+            <input id="search" placeholder="Поиск: имя, телефон, услуга…" oninput="renderPatients()" />
+            <select id="fStatus" onchange="renderPatients()">
+              <option value="">Все статусы</option>
+              <option value="new">Новые</option>
+              <option value="confirmed">Подтверждённые</option>
+              <option value="done">Выполненные</option>
+              <option value="cancelled">Отменённые</option>
+            </select>
+            <select id="fWhen" onchange="renderPatients()">
+              <option value="">Все даты</option>
+              <option value="today">Только сегодня</option>
+              <option value="upcoming">Предстоящие</option>
+            </select>
+          </div>
+          <div class="plist" id="plist"></div>
+        </div>
+      `;
+      renderPatients();
+    }
+
+    function counters() {
+      const tk = todayKey();
+      const now = Date.now();
+      let today = 0, upcoming = 0;
+      state.items.forEach(a => {
+        if (apptDateKey(a) === tk) today++;
+        if (a.appointment_at && new Date(a.appointment_at).getTime() > now) upcoming++;
+      });
+      get("s-total").textContent = state.items.length;
+      get("s-today").textContent = today;
+      get("s-upcoming").textContent = upcoming;
+    }
+
+    async function setStatus(id, status, sel) {
+      sel.className = "stsel " + status;
+      const r = await api({ action: "status", id, status });
+      if (r.status !== 200) { alert("Не удалось сохранить статус"); return; }
+      const it = state.items.find(x => x.id === id); if (it) it.status = status;
+      counters();
+    }
+
+    function renderPatients() {
+      counters();
+      const q = get("search").value.trim().toLowerCase();
+      const fs = get("fStatus").value;
+      const fw = get("fWhen").value;
+      const tk = todayKey();
+      const now = Date.now();
+
+      const list = state.items.filter(a => {
+        if (fs && (a.status || "new") !== fs) return false;
+        if (fw === "today" && apptDateKey(a) !== tk) return false;
+        if (fw === "upcoming" && !(a.appointment_at && new Date(a.appointment_at).getTime() > now)) return false;
+        if (q) { const hay = [a.full_name, a.phone, a.service, a.comment].join(" ").toLowerCase(); if (!hay.includes(q)) return false; }
+        return true;
+      });
+
+      const wrap = get("plist");
+      if (!list.length) { wrap.innerHTML = '<p class="empty">Записей не найдено.</p>'; return; }
+
+      wrap.innerHTML = list.map(a => {
+        const st = a.status || "new";
+        const src = a.source || "site";
+        const isToday = apptDateKey(a) === tk;
+        const opts = ["new","confirmed","done","cancelled"].map(s => `<option value="${s}" ${s===st?"selected":""}>${STATUS_LABEL[s]}</option>`).join("");
+        return `
+        <div class="pcard ${isToday ? "today" : ""}">
+          <div class="when">🗓️ ${whenText(a)} ${isToday ? '<span class="badge-today">сегодня</span>' : ""}</div>
+          <div class="pname">${esc(a.full_name || "Пациент")}</div>
+          <div class="row">📞 ${esc(a.phone || "—")}</div>
+          ${a.service ? `<div class="row">💼 ${esc(a.service)}</div>` : ""}
+          ${a.comment ? `<div class="row">💬 ${esc(a.comment)}</div>` : ""}
+          <div><span class="src ${src}">${SRC_LABEL[src] || src}</span></div>
+          <select class="stsel ${st}" onchange="setStatus(${a.id}, this.value, this)">${opts}</select>
+        </div>`;
+      }).join("");
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadDoctorList();
+      // авто-вход, если уже залогинен в этой вкладке
+      if (creds().doctorId && creds().password) {
+        const r = await api({ action: "login" });
+        if (r.status === 200) showCab(r.data);
+        else { sessionStorage.removeItem("dr_pw"); }
+      }
+    });
+  </script>
+</body>
+</html>

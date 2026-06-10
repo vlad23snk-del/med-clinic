@@ -1,0 +1,92 @@
+// ============================================================
+//  Edge Function: doctor-api
+//  Личный кабинет врача. Вход по личному паролю (таблица doctor_auth,
+//  закрыта RLS). Возвращает профиль врача и его записи (пациентов).
+//  Пароли НЕ доступны публичным ключом — только через эту функцию.
+//
+//  Запросы (POST JSON):
+//   { action:"login",  doctorId, password }            → профиль + записи
+//   { action:"list",   doctorId, password }            → обновить записи
+//   { action:"status", doctorId, password, id, status} → сменить статус записи
+// ============================================================
+
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const db = createClient(SUPABASE_URL, SERVICE_KEY);
+
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+}
+
+const ALLOWED_STATUS = ["new", "confirmed", "done", "cancelled"];
+
+// Проверка пароля → возвращает профиль врача или null
+async function authDoctor(doctorId: number, password: string) {
+  if (!doctorId || !password) return null;
+  const { data: auth } = await db.from("doctor_auth").select("doctor_id").eq("doctor_id", doctorId).eq("password", password).maybeSingle();
+  if (!auth) return null;
+  const { data: doc } = await db.from("doctors").select("*").eq("id", doctorId).maybeSingle();
+  return doc ?? null;
+}
+
+// Записи (пациенты) этого врача: явно назначенные ему + неназначенные по его специальности
+async function appointmentsFor(doc: any) {
+  const name = doc.name;
+  const spec = doc.specialty;
+  const [byName, bySpec] = await Promise.all([
+    db.from("appointments").select("*").eq("doctor_name", name),
+    db.from("appointments").select("*").eq("specialty", spec),
+  ]);
+  const map = new Map<number, any>();
+  for (const a of [...(byName.data ?? []), ...(bySpec.data ?? [])]) {
+    const mine = a.doctor_name === name || (!a.doctor_name && a.specialty === spec);
+    if (mine) map.set(a.id, a);
+  }
+  // сортируем: будущие приёмы по времени, затем остальные
+  return [...map.values()].sort((x, y) => {
+    const tx = x.appointment_at ? new Date(x.appointment_at).getTime() : (x.preferred_date ? new Date(x.preferred_date).getTime() : 0);
+    const ty = y.appointment_at ? new Date(y.appointment_at).getTime() : (y.preferred_date ? new Date(y.preferred_date).getTime() : 0);
+    return ty - tx;
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+
+  let body: any = {};
+  try { body = await req.json(); } catch { /* пусто */ }
+
+  const doc = await authDoctor(Number(body.doctorId), body.password);
+  if (!doc) return json({ error: "Неверный пароль" }, 401);
+
+  if (body.action === "login" || body.action === "list") {
+    const items = await appointmentsFor(doc);
+    const profile = {
+      id: doc.id, name: doc.name, specialty: doc.specialty,
+      description: doc.description, education: doc.education,
+      experience_years: doc.experience_years, photo_url: doc.photo_url,
+    };
+    return json({ ok: true, doctor: profile, items });
+  }
+
+  if (body.action === "status") {
+    if (!ALLOWED_STATUS.includes(body.status)) return json({ error: "Недопустимый статус" }, 400);
+    // убеждаемся, что запись принадлежит этому врачу
+    const { data: appt } = await db.from("appointments").select("id, doctor_name, specialty").eq("id", body.id).maybeSingle();
+    if (!appt) return json({ error: "Запись не найдена" }, 404);
+    const mine = appt.doctor_name === doc.name || (!appt.doctor_name && appt.specialty === doc.specialty);
+    if (!mine) return json({ error: "Нет доступа к этой записи" }, 403);
+    const { error } = await db.from("appointments").update({ status: body.status }).eq("id", body.id);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
+  return json({ error: "Неизвестное действие" }, 400);
+});
