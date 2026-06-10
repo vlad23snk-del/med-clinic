@@ -78,6 +78,44 @@ function onlyDigits(s: string) {
   return (s || "").replace(/\D/g, "");
 }
 
+// SHA-256 (hex) — тем же способом, что и в patient-api, чтобы код входа совпал
+async function sha256(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Вход в личный кабинет: клиент пришёл по ссылке t.me/бот?start=code_<token>.
+// Узнаём телефон по токену, привязываем чат и отправляем код для входа на сайте.
+async function sendLoginCode(chat_id: number, token: string) {
+  const { data: row } = await db.from("tg_login").select("phone, expires_at").eq("token", token).maybeSingle();
+  if (!row || new Date(row.expires_at).getTime() < Date.now()) {
+    return sendMessage(
+      chat_id,
+      "Ссылка для входа устарела. Вернитесь на сайт и снова нажмите «Перейти в Telegram для подтверждения кода».",
+      { reply_markup: mainMenu },
+    );
+  }
+  const phone = row.phone;
+  // Привязываем телефон к этому чату (для будущих подтверждений и напоминаний)
+  await saveState(chat_id, { phone });
+  // Генерируем код и сохраняем его хеш — сайт проверит ввод по таблице patient_codes
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  await db.from("patient_codes").upsert({
+    phone,
+    code_hash: await sha256(code),
+    channel: "telegram",
+    attempts: 0,
+    expires_at: new Date(Date.now() + 5 * 60000).toISOString(),
+    created_at: new Date().toISOString(),
+  });
+  await db.from("tg_login").delete().eq("token", token);
+  return sendMessage(
+    chat_id,
+    `🔐 <b>Код для входа в личный кабинет</b>\n\nВаш код: <b>${code}</b>\n\nВведите его на сайте. Код действует 5 минут. Никому не сообщайте его.`,
+    { reply_markup: mainMenu },
+  );
+}
+
 // ---- Списки врачей и специальностей из базы ----
 async function loadSpecialties(): Promise<{ spec: string; doctor: string | null }[]> {
   const { data: services } = await db.from("services").select("specialty");
@@ -420,6 +458,10 @@ async function handleUpdate(update: any) {
     const user = await getUser(chat_id);
     // создаём запись о пользователе, если её ещё нет
     if (!user) await saveState(chat_id, { state: {} });
+    // Вход в личный кабинет: пришёл по ссылке с сайта (start=code_<token>)
+    if (param.startsWith("code_")) {
+      return sendLoginCode(chat_id, param.slice(5));
+    }
     if (param === "book") {
       return startBooking(chat_id, await getUser(chat_id));
     }

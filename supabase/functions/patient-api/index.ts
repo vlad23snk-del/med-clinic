@@ -158,6 +158,25 @@ Deno.serve(async (req) => {
     return json({ ok: true, channel, sent: true });
   }
 
+  // ---------- 1b) Начать вход через Telegram «Старт» ----------
+  // Создаём одноразовую ссылку: t.me/бот?start=code_<token>. Сам код пришлёт
+  // бот, когда клиент нажмёт «Старт» (см. функцию telegram-bot).
+  if (action === "start_telegram") {
+    const phone = phone10(body.phone);
+    if (phone.length !== 10) return json({ error: "Введите корректный номер телефона" }, 400);
+
+    const tkey = "patient_code:" + phone + ":" + ip;
+    if (await isBlocked(tkey)) return json({ error: "Слишком много запросов. Попробуйте через 15 минут." }, 429);
+    await recordFail(tkey);
+
+    const token = randomToken().slice(0, 40); // payload Telegram ≤ 64 симв., только [A-Za-z0-9_-]
+    await db.from("tg_login").insert({
+      token, phone,
+      expires_at: new Date(Date.now() + 10 * 60000).toISOString(),
+    });
+    return json({ ok: true, token });
+  }
+
   // ---------- 2) Проверить код ----------
   if (action === "verify_code") {
     const phone = phone10(body.phone);
