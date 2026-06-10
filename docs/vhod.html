@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход для сотрудников — Клиника «Здоровье»</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root { --primary:#1f6bff; --primary-600:#1556d6; --accent:#12b8a6; --ink:#0f172a; --muted:#64748b; --line:#e7eef7; --bg:#f4f8fd; --card-shadow:0 14px 40px rgba(15,45,90,.08); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased; }
+    .nav { background:#fff; border-bottom:1px solid var(--line); }
+    .nav-inner { max-width:1080px; margin:0 auto; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; font-size:18px; }
+    .brand .logo { width:38px; height:38px; display:grid; place-items:center; border-radius:11px; color:#fff; font-size:20px; background:linear-gradient(135deg,var(--primary),var(--accent)); }
+    .brand b { color:var(--primary); }
+    .back { color:var(--muted); font-size:14px; font-weight:700; text-decoration:none; }
+    .back:hover { color:var(--primary); }
+
+    .page { max-width:1080px; margin:0 auto; padding:34px 22px 60px; }
+    .head { text-align:center; margin-bottom:30px; }
+    .head .ic { font-size:44px; }
+    .head h1 { font-size:28px; margin:8px 0 6px; }
+    .head p { color:var(--muted); font-size:15px; }
+
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+    @media (max-width:760px){ .grid { grid-template-columns:1fr; } }
+
+    .card { background:#fff; border:1px solid var(--line); border-radius:22px; padding:32px; box-shadow:var(--card-shadow); text-align:center; }
+    .card .cic { font-size:40px; }
+    .card h2 { font-size:22px; margin:8px 0 4px; }
+    .card .sub { color:var(--muted); font-size:14px; margin-bottom:20px; }
+    .card label { display:block; text-align:left; font-weight:600; font-size:13px; color:var(--muted); margin:14px 0 6px; }
+    .card select, .card input { width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; font-size:15px; font-family:inherit; outline:none; background:#fff; }
+    .card select:focus, .card input:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
+    .card button { width:100%; margin-top:18px; padding:14px; border:none; color:#fff; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .btn-admin { background:linear-gradient(135deg,var(--primary),var(--primary-600)); }
+    .btn-doc { background:linear-gradient(135deg,var(--accent),#0e9e8e); }
+    .card .err { color:#dc2626; font-size:14px; margin-top:12px; min-height:18px; }
+    .card.admin { border-top:4px solid var(--primary); }
+    .card.doc { border-top:4px solid var(--accent); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="logo">✚</span><span>Клиника <b>«Здоровье»</b></span></div>
+      <a class="back" href="index.html">← На главную</a>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="head">
+      <div class="ic">🏥</div>
+      <h1>Вход для сотрудников</h1>
+      <p>Выберите своё окно входа: для владельцев — слева, для врачей — справа.</p>
+    </div>
+
+    <div class="grid">
+      <!-- Окошко 1: главная админ-панель -->
+      <div class="card admin">
+        <div class="cic">🛡️</div>
+        <h2>Админ-панель</h2>
+        <p class="sub">Для владельцев и администраторов клиники. Все записи и статусы.</p>
+        <label for="adminPw">Пароль администратора</label>
+        <input id="adminPw" type="password" placeholder="Введите пароль" onkeydown="if(event.key==='Enter')adminLogin()" />
+        <button class="btn-admin" onclick="adminLogin()">Войти в админ-панель</button>
+        <div class="err" id="adminErr"></div>
+      </div>
+
+      <!-- Окошко 2: вход для каждого врача -->
+      <div class="card doc">
+        <div class="cic">👨‍⚕️</div>
+        <h2>Кабинет врача</h2>
+        <p class="sub">Для каждого врача — свой профиль и свои пациенты.</p>
+        <label for="docSelect">Выберите себя</label>
+        <select id="docSelect"><option value="">Загрузка списка…</option></select>
+        <label for="docPw">Личный пароль</label>
+        <input id="docPw" type="password" placeholder="Введите пароль" onkeydown="if(event.key==='Enter')doctorLogin()" />
+        <button class="btn-doc" onclick="doctorLogin()">Войти в кабинет врача</button>
+        <div class="err" id="docErr"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://jntfbxunzvhnzocquvby.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_i_LZdRnHXMYNFf608V86GA_ohVuGfAH";
+    const ADMIN_FN_URL = SUPABASE_URL + "/functions/v1/admin-api";
+    const DOC_FN_URL = SUPABASE_URL + "/functions/v1/doctor-api";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const get = id => document.getElementById(id);
+
+    /* ===== Вход администратора ===== */
+    async function adminLogin() {
+      const val = get("adminPw").value.trim();
+      const err = get("adminErr");
+      err.textContent = "Проверяем…";
+      sessionStorage.setItem("admin_pw", val);
+      try {
+        const resp = await fetch(ADMIN_FN_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: val, action: "list" }),
+        });
+        if (resp.status === 200) {
+          err.textContent = "";
+          location.href = "admin.html"; // там сработает авто-вход по сохранённому паролю
+        } else {
+          sessionStorage.removeItem("admin_pw");
+          err.textContent = resp.status === 401 ? "Неверный пароль" : "Ошибка входа, попробуйте позже";
+        }
+      } catch (e) {
+        sessionStorage.removeItem("admin_pw");
+        err.textContent = "Нет связи с сервером";
+      }
+    }
+
+    /* ===== Вход врача ===== */
+    async function loadDoctorList() {
+      try {
+        const { data } = await sb.from("doctors").select("id, name, specialty").order("name");
+        get("docSelect").innerHTML = '<option value="">— Выберите себя —</option>' +
+          (data || []).map(d => `<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join("");
+      } catch (e) {
+        get("docSelect").innerHTML = '<option value="">Не удалось загрузить список</option>';
+      }
+    }
+
+    async function doctorLogin() {
+      const id = get("docSelect").value;
+      const pw = get("docPw").value.trim();
+      const err = get("docErr");
+      if (!id) { err.textContent = "Выберите врача из списка"; return; }
+      err.textContent = "Проверяем…";
+      sessionStorage.setItem("dr_id", id);
+      sessionStorage.setItem("dr_pw", pw);
+      try {
+        const resp = await fetch(DOC_FN_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ doctorId: Number(id), password: pw, action: "login" }),
+        });
+        if (resp.status === 200) {
+          err.textContent = "";
+          location.href = "vrach.html"; // там сработает авто-вход по сохранённым данным
+        } else {
+          sessionStorage.removeItem("dr_pw");
+          err.textContent = resp.status === 401 ? "Неверный пароль" : "Ошибка входа, попробуйте позже";
+        }
+      } catch (e) {
+        sessionStorage.removeItem("dr_pw");
+        err.textContent = "Нет связи с сервером";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadDoctorList);
+  </script>
+</body>
+</html>
