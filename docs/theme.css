@@ -1,0 +1,119 @@
+/* =====================================================================
+   Тёмная тема — общая для всех страниц сайта клиники «Здоровье».
+   Включается, когда у <html> стоит атрибут data-theme="dark".
+   Подключается на каждой странице: <link rel="stylesheet" href="theme.css">
+   ===================================================================== */
+
+/* Плавное переключение цветов */
+html { transition: background-color .25s ease, color .25s ease; }
+
+/* ---- Переопределяем палитру для тёмной темы ---- */
+html[data-theme="dark"] {
+  --ink: #e7edf6;            /* основной текст — светлый */
+  --muted: #9fb0c7;          /* вторичный текст */
+  --line: #2b3a55;           /* границы */
+  --bg: #0e1626;             /* фон страницы */
+  --card-shadow: 0 14px 40px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+html[data-theme="dark"] body { background: var(--bg); color: var(--ink); }
+
+/* ---- Сплошные белые поверхности → тёмные карточки ---- */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .block,
+html[data-theme="dark"] section.block,
+html[data-theme="dark"] .login,
+html[data-theme="dark"] .choose,
+html[data-theme="dark"] .choice,
+html[data-theme="dark"] .auth,
+html[data-theme="dark"] .table-wrap,
+html[data-theme="dark"] .doctor-card,
+html[data-theme="dark"] .service-card,
+html[data-theme="dark"] .appointment-form,
+html[data-theme="dark"] .contact-card,
+html[data-theme="dark"] .search-box,
+html[data-theme="dark"] .symptom-result,
+html[data-theme="dark"] .stats,
+html[data-theme="dark"] .stat,
+html[data-theme="dark"] .feature,
+html[data-theme="dark"] .review,
+html[data-theme="dark"] .news,
+html[data-theme="dark"] .pcard,
+html[data-theme="dark"] .appt,
+html[data-theme="dark"] .sheet {
+  background: #16223c !important;
+  border-color: var(--line) !important;
+  color: var(--ink);
+}
+
+/* ---- Навигация (сплошная и «стеклянная») ---- */
+html[data-theme="dark"] .nav {
+  background: rgba(13,21,38,.88) !important;
+  border-color: var(--line) !important;
+}
+html[data-theme="dark"] .nav a.back,
+html[data-theme="dark"] .nav button.logout { background: #16223c !important; }
+
+/* ---- Поля ввода ---- */
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] .tools input,
+html[data-theme="dark"] .tools select {
+  background: #0e1a30 !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder { color: #6b7c94; }
+
+/* ---- Таблицы (админ-панель / кабинет врача) ---- */
+html[data-theme="dark"] th { background: #0e1a30 !important; color: #cbd5e1 !important; }
+html[data-theme="dark"] td { border-color: var(--line) !important; }
+html[data-theme="dark"] tbody tr:hover { background: #1b2942 !important; }
+
+/* ---- Вторичный текст ---- */
+html[data-theme="dark"] .section-sub,
+html[data-theme="dark"] .hint,
+html[data-theme="dark"] .sub,
+html[data-theme="dark"] .cdesc,
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] .small { color: var(--muted) !important; }
+
+/* ---- Заголовки внутри карточек — светлые ---- */
+html[data-theme="dark"] .block h2,
+html[data-theme="dark"] .card h2,
+html[data-theme="dark"] .login h1,
+html[data-theme="dark"] .auth h1,
+html[data-theme="dark"] .choose h1 { color: var(--ink); }
+
+/* ---- «Зашитый» тёмно-серый текст на тёмных поверхностях → светлее ---- */
+html[data-theme="dark"] .nav-links a { color: #c7d3e6 !important; }
+html[data-theme="dark"] .nav-links a:hover { color: #fff !important; }
+html[data-theme="dark"] .logout,
+html[data-theme="dark"] .review p,
+html[data-theme="dark"] .contact-card p,
+html[data-theme="dark"] .doctor-card ul,
+html[data-theme="dark"] .block p.lead,
+html[data-theme="dark"] .block .lead,
+html[data-theme="dark"] .edu,
+html[data-theme="dark"] .who span,
+html[data-theme="dark"] .pcard .row,
+html[data-theme="dark"] .appt .meta,
+html[data-theme="dark"] .step p,
+html[data-theme="dark"] .mrow .val { color: #c4d0e2 !important; }
+
+/* =====================================================================
+   Кнопка переключения темы (плавающая, внизу справа)
+   ===================================================================== */
+.theme-toggle {
+  position: fixed; right: 18px; bottom: 18px; z-index: 9999;
+  width: 50px; height: 50px; border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #ffffff; color: #1f6bff; font-size: 22px; line-height: 1;
+  cursor: pointer; display: grid; place-items: center;
+  box-shadow: 0 8px 24px rgba(15,45,90,.18);
+  transition: transform .2s, box-shadow .2s, background .2s;
+}
+.theme-toggle:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(15,45,90,.26); }
+html[data-theme="dark"] .theme-toggle { background: #16223c; color: #fbbf24; border-color: var(--line); }
