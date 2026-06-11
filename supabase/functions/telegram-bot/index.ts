@@ -58,6 +58,29 @@ const BOOK_BTN = "📅 Записаться на приём";
 // Кнопки медкарты
 const CARD_BTN = "🪪 Заполнить медкарту";
 const MYCARD_BTN = "🪪 Моя медкарта";
+const EDIT_BTN = "✏️ Изменить медкарту";
+
+// Поля медкарты по порядку (для показа по пунктам и редактирования)
+const CARD_FIELDS = [
+  { key: "first_name",  label: "Имя" },
+  { key: "last_name",   label: "Фамилия" },
+  { key: "phone",       label: "Телефон" },
+  { key: "age",         label: "Возраст" },
+  { key: "gender",      label: "Пол" },
+  { key: "email",       label: "Email" },
+  { key: "diseases",    label: "Хронические болезни" },
+  { key: "allergies",   label: "Аллергии" },
+  { key: "surgeries",   label: "Операции" },
+  { key: "medications", label: "Лекарства" },
+];
+// Красивое значение поля для показа
+function cardValue(p: any, key: string): string {
+  const v = p?.[key];
+  if (v === null || v === undefined || v === "") return "—";
+  if (key === "phone") return "+7" + v;
+  if (key === "gender") return v === "м" ? "Мужской" : v === "ж" ? "Женский" : String(v);
+  return String(v);
+}
 
 // Запасное статичное меню (если вдруг не удалось определить пациента)
 const mainMenu = {
@@ -84,7 +107,7 @@ function cardFilled(p: any): boolean {
 async function menuFor(chat_id: number) {
   const p = await getPatientByChat(chat_id);
   const rows: unknown[] = [[{ text: BOOK_BTN }]];
-  rows.push([{ text: cardFilled(p) ? MYCARD_BTN : CARD_BTN }]);
+  rows.push([{ text: cardFilled(p) ? EDIT_BTN : CARD_BTN }]);
   rows.push([{ text: "📱 Подключить уведомления", request_contact: true }]);
   return { keyboard: rows, resize_keyboard: true };
 }
@@ -447,6 +470,37 @@ async function handleCardStep(chat_id: number, st: any, text: string) {
   }
 }
 
+// ---- Изменение медкарты в Telegram (показ по пунктам + кнопки с цифрами) ----
+// Показывает всю карту по пунктам 1–10 и кнопки выбора пункта для изменения.
+async function showEditCard(chat_id: number) {
+  const p = await getPatientByChat(chat_id);
+  if (!cardFilled(p)) return startCard(chat_id); // карты ещё нет — предложим заполнить
+
+  let body = "🪪 <b>Ваша медкарта:</b>\n\n";
+  CARD_FIELDS.forEach((f, i) => {
+    body += `${i + 1}. ${f.label}: <b>${cardValue(p, f.key)}</b>\n`;
+  });
+  body += "\nКакой пункт вы хотите изменить?";
+
+  // Кнопки с цифрами пунктов: 1–5, 6–10, затем «Готово»
+  const nums = CARD_FIELDS.map((_, i) => ({ text: String(i + 1), callback_data: `ef:${i}` }));
+  const inline_keyboard = [nums.slice(0, 5), nums.slice(5, 10), [{ text: "✅ Готово", callback_data: "ef_done" }]];
+  return sendMessage(chat_id, body, { reply_markup: { inline_keyboard } });
+}
+
+// Сохраняет одно изменённое поле медкарты (привязка по Telegram ID)
+async function updatePatientField(chat_id: number, key: string, value: unknown) {
+  await db.from("patients").update({ [key]: value, updated_at: new Date().toISOString() }).eq("telegram_chat_id", chat_id);
+  // держим имя/телефон в telegram_users в актуальном виде
+  const p = await getPatientByChat(chat_id);
+  if (p) {
+    await saveState(chat_id, {
+      full_name: [p.first_name, p.last_name].filter(Boolean).join(" "),
+      ...(p.phone ? { phone: p.phone } : {}),
+    });
+  }
+}
+
 // ---- ИИ-консультант по симптомам (как умный поиск на сайте) ----
 const URGENCY: Record<string, string> = {
   emergency: "⚠️ Похоже на срочную ситуацию. При острых симптомах звоните 103 (скорая помощь).",
@@ -546,6 +600,39 @@ async function handleUpdate(update: any) {
       );
     }
 
+    // Изменение медкарты: завершить
+    if (dataStr === "ef_done") {
+      await saveState(chat_id, { state: {} });
+      return sendMessage(chat_id, "Готово! Изменения сохранены. 💙", { reply_markup: await menuFor(chat_id) });
+    }
+
+    // Изменение медкарты: выбран пункт N → спрашиваем новое значение
+    if (dataStr.startsWith("ef:")) {
+      const idx = Number(dataStr.slice(3));
+      const f = CARD_FIELDS[idx];
+      if (!f) return;
+      await saveState(chat_id, { state: { step: "edit_field", data: { fieldIdx: idx } } });
+      if (f.key === "gender") {
+        return sendMessage(chat_id, "Выберите новый <b>пол</b>:", {
+          reply_markup: { inline_keyboard: [[
+            { text: "👨 Мужской", callback_data: "eg:м" },
+            { text: "👩 Женский", callback_data: "eg:ж" },
+          ]] },
+        });
+      }
+      const extra = f.key === "phone" ? { reply_markup: phoneKeyboard } : { reply_markup: removeKeyboard };
+      const tip = (["email","diseases","allergies","surgeries","medications"].includes(f.key)) ? " (или «-», чтобы очистить)" : "";
+      return sendMessage(chat_id, `Введите новое значение для пункта «<b>${f.label}</b>»${tip}:`, extra);
+    }
+
+    // Изменение медкарты: выбран пол
+    if (dataStr.startsWith("eg:") && st.step === "edit_field") {
+      await updatePatientField(chat_id, "gender", dataStr.slice(3));
+      await saveState(chat_id, { state: {} });
+      await sendMessage(chat_id, "✅ «Пол» обновлён.");
+      return showEditCard(chat_id);
+    }
+
     // Пол при заполнении медкарты
     if (dataStr.startsWith("card_g:") && st.step === "card_gender") {
       const card = st.data?.card ?? {};
@@ -616,6 +703,13 @@ async function handleUpdate(update: any) {
       await saveState(chat_id, { state: { step: "card_age", data: { card } } });
       return sendMessage(chat_id, "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?", { reply_markup: removeKeyboard });
     }
+    // Поделился контактом при изменении пункта «Телефон»
+    if (st.step === "edit_field" && CARD_FIELDS[st.data?.fieldIdx]?.key === "phone") {
+      await updatePatientField(chat_id, "phone", phone.slice(-10));
+      await saveState(chat_id, { state: {} });
+      await sendMessage(chat_id, "✅ «Телефон» обновлён.", { reply_markup: removeKeyboard });
+      return showEditCard(chat_id);
+    }
     // контакт прислали вне записи — просто запоминаем телефон,
     // чтобы связать с записью с сайта и слать подтверждения/напоминания
     await saveState(chat_id, { phone });
@@ -634,6 +728,11 @@ async function handleUpdate(update: any) {
   // Нажата кнопка «Заполнить медкарту»
   if (text === CARD_BTN) {
     return startCard(chat_id);
+  }
+
+  // Нажата кнопка «Изменить медкарту» — показываем карту по пунктам
+  if (text === EDIT_BTN) {
+    return showEditCard(chat_id);
   }
 
   // Нажата кнопка «Моя медкарта» — показываем краткую сводку
@@ -709,6 +808,38 @@ async function handleUpdate(update: any) {
   // Шаги мастера заполнения медкарты
   if (typeof st.step === "string" && st.step.startsWith("card_")) {
     return handleCardStep(chat_id, st, text);
+  }
+
+  // Изменение одного пункта медкарты: пришло новое значение
+  if (st.step === "edit_field") {
+    const f = CARD_FIELDS[st.data?.fieldIdx];
+    if (!f) { await saveState(chat_id, { state: {} }); return showEditCard(chat_id); }
+    let value: unknown;
+    if (f.key === "gender") {
+      return sendMessage(chat_id, "Пожалуйста, выберите пол кнопкой 👇", {
+        reply_markup: { inline_keyboard: [[
+          { text: "👨 Мужской", callback_data: "eg:м" },
+          { text: "👩 Женский", callback_data: "eg:ж" },
+        ]] },
+      });
+    } else if (f.key === "phone") {
+      const digits = onlyDigits(text);
+      if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».", { reply_markup: phoneKeyboard });
+      value = digits.slice(-10);
+    } else if (f.key === "age") {
+      const n = parseInt(onlyDigits(text), 10);
+      if (!n || n < 1 || n > 120) return sendMessage(chat_id, "Напишите возраст числом, например 35.");
+      value = n;
+    } else if (f.key === "first_name" || f.key === "last_name") {
+      if (text.trim().length < 2) return sendMessage(chat_id, `Напишите ${f.label.toLowerCase()} текстом (минимум 2 буквы).`);
+      value = text.trim();
+    } else {
+      value = isSkip(text) ? null : text.trim(); // email и медицинские поля можно очистить «-»
+    }
+    await updatePatientField(chat_id, f.key, value);
+    await saveState(chat_id, { state: {} });
+    await sendMessage(chat_id, `✅ «${f.label}» обновлено.`, { reply_markup: removeKeyboard });
+    return showEditCard(chat_id);
   }
 
   // Пустое сообщение (стикер/фото без текста) — просим описать жалобу словами
