@@ -118,13 +118,13 @@
     "Код в WhatsApp": "Code via WhatsApp", "Введите код": "Enter the code",
     "Мы отправили 6-значный код. Введите его ниже.": "We've sent a 6-digit code. Enter it below.",
     "Код из сообщения": "Code from the message", "Войти": "Log in", "← Изменить номер": "← Change number",
-    "Ваша медкарта": "Your medical card", "🪪 Основная информация": "🪪 Basic information",
+    "Карточка клиента": "Client card", "🪪 Основная информация": "🪪 Basic information",
     "Эти данные видит врач, когда вы записываетесь на приём.": "The doctor sees this information when you book an appointment.",
     "Имя": "First name", "Фамилия": "Last name", "Дата рождения": "Date of birth", "Возраст": "Age",
     "напр. 35": "e.g. 35", "Пол": "Gender", "Мужской": "Male", "Женский": "Female",
     "Группа крови": "Blood type", "напр. II (A) Rh+": "e.g. II (A) Rh+",
     "Телефон": "Phone", "Email (необязательно)": "Email (optional)", "для копий уведомлений": "for copies of notifications",
-    "🩺 Медицинская карта": "🩺 Medical card",
+    "🩺 Карточка клиента": "🩺 Client card",
     "Заполните заранее — врач увидит это перед приёмом и будет готов помочь.":
       "Fill in advance — the doctor will see this before the appointment and be ready to help.",
     "Хронические болезни и диагнозы": "Chronic conditions and diagnoses",
@@ -133,7 +133,7 @@
     "Перенесённые операции": "Past surgeries", "Напр.: удаление аппендикса (2018)…": "E.g.: appendix removal (2018)…",
     "Постоянно принимаемые лекарства": "Medications taken regularly", "Напр.: эналаприл 5 мг утром…": "E.g.: enalapril 5 mg in the morning…",
     "Комментарии и пожелания": "Comments and requests", "Любая важная для врача информация…": "Any information important for the doctor…",
-    "💾 Сохранить медкарту": "💾 Save medical card", "📅 Мои записи": "📅 My appointments",
+    "💾 Сохранить карточку": "💾 Save card", "📅 Мои записи": "📅 My appointments",
     "Ваши прошлые и будущие приёмы.": "Your past and upcoming appointments.",
 
     // Вход сотрудников / админ / врач
@@ -161,13 +161,13 @@
     "↻ Обновить": "↻ Refresh", "Поиск: имя, телефон, специалист…": "Search: name, phone, specialist…",
     "Когда": "When", "Пациент": "Patient", "Специалист / услуга": "Specialist / service",
     "Источник": "Source", "Статус": "Status", "Запись": "Appointment",
-    "Загрузка…": "Loading…", "Медкарта пациента": "Patient's medical card",
+    "Загрузка…": "Loading…", "Карточка клиента: ": "Client card: ",
 
     // Динамические строки из скриптов (переводятся при появлении)
     "Новая": "New", "Подтверждена": "Confirmed", "Выполнена": "Completed", "Отменена": "Cancelled",
     "Записей не найдено.": "No records found.", "Записей не найдено": "No records found",
     "Записей пока нет.": "No records yet.", "сегодня": "today",
-    "🪪 Открыть медкарту": "🪪 Open medical card", "Проверяем…": "Checking…",
+    "🪪 Открыть карточку": "🪪 Open client card", "Проверяем…": "Checking…",
     "Сохраняем…": "Saving…", "✅ Сохранено": "✅ Saved", "Отправляем код…": "Sending code…",
     "Неверный пароль": "Wrong password", "время уточняется": "time to be confirmed",
     "Пол:": "Gender:", "Возраст:": "Age:", "Аллергии:": "Allergies:"

@@ -134,7 +134,7 @@
     <div class="sheet">
       <div class="sheet-head">
         <div>
-          <h3 id="cardName">Медкарта пациента</h3>
+          <h3 id="cardName">Карточка клиента</h3>
           <div class="ph" id="cardPhone"></div>
         </div>
         <button class="x" onclick="closeCard()">×</button>
@@ -309,7 +309,7 @@
           ${a.comment ? `<div class="row">💬 ${esc(a.comment)}</div>` : ""}
           <div><span class="src ${src}">${SRC_LABEL[src] || src}</span></div>
           <select class="stsel ${st}" onchange="setStatus(${a.id}, this.value, this)">${opts}</select>
-          <button class="cardbtn" onclick="openCard('${esc(a.phone || "")}', '${esc(a.full_name || "Пациент")}')">🪪 Открыть медкарту</button>
+          <button class="cardbtn" onclick="openCard('${esc(a.phone || "")}', '${esc(a.full_name || "Пациент")}')">🪪 Открыть карточку</button>
         </div>`;
       }).join("");
     }
@@ -333,7 +333,7 @@
 
     async function openCard(phone, name) {
       const modal = get("cardModal");
-      get("cardName").textContent = "Медкарта: " + (name || "Пациент");
+      get("cardName").textContent = "Карточка клиента: " + (name || "Пациент");
       get("cardPhone").textContent = "📞 " + fmtPhone(phone);
       get("cardBody").innerHTML = '<div class="mcard-empty">Загрузка…</div>';
       modal.classList.add("open");
@@ -343,7 +343,7 @@
       if (r.status !== 200) { get("cardBody").innerHTML = `<div class="mcard-empty">${esc(r.data.error || "Не удалось загрузить карту")}</div>`; return; }
       const p = r.data.patient;
       if (!p) {
-        get("cardBody").innerHTML = '<div class="mcard-empty">🗂️ Пациент ещё не заполнил медкарту в личном кабинете.<br>Основная информация по записи — в карточке слева.</div>';
+        get("cardBody").innerHTML = '<div class="mcard-empty">🗂️ Пациент ещё не заполнил карточку клиента в личном кабинете.<br>Основная информация по записи — в карточке слева.</div>';
         return;
       }
 

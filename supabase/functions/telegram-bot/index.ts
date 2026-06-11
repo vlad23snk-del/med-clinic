@@ -35,62 +35,132 @@ async function tg(method: string, payload: unknown) {
 }
 
 function sendMessage(chat_id: number, text: string, extra: Record<string, unknown> = {}) {
-  return tg("sendMessage", { chat_id, text, parse_mode: "HTML", ...extra });
+  // Автоперевод статичных строк по словарю, если выбран английский
+  return tg("sendMessage", { chat_id, text: tr(text), parse_mode: "HTML", ...extra });
 }
 
 function answerCallback(id: string, text = "") {
   return tg("answerCallbackQuery", { callback_query_id: id, text });
 }
 
-// Кнопка «Поделиться номером телефона» (специальная клавиатура Telegram)
-const phoneKeyboard = {
-  keyboard: [[{ text: "📱 Поделиться номером телефона", request_contact: true }]],
-  resize_keyboard: true,
-  one_time_keyboard: true,
-};
+// Клавиатура «Поделиться номером телефона» (язык — по текущему пользователю)
+function phoneKb() {
+  return {
+    keyboard: [[{ text: btn("phone"), request_contact: true }]],
+    resize_keyboard: true,
+    one_time_keyboard: true,
+  };
+}
 
 // Убрать обычную клавиатуру
 const removeKeyboard = { remove_keyboard: true };
 
-// Текст кнопки запуска записи (главное меню)
-const BOOK_BTN = "📅 Записаться на приём";
+// ============ Язык интерфейса (ru / en) ============
+type Lang = "ru" | "en";
+let CURRENT_LANG: Lang = "ru"; // ставится в начале обработки каждого обновления
 
-// Кнопки медкарты
-const CARD_BTN = "🪪 Заполнить медкарту";
-const MYCARD_BTN = "🪪 Моя медкарта";
-const EDIT_BTN = "✏️ Изменить медкарту";
+// Подписи кнопок главного меню — на двух языках
+const BTN = {
+  book:   { ru: "📅 Записаться на приём",            en: "📅 Book an appointment" },
+  card:   { ru: "🪪 Заполнить карточку клиента",     en: "🪪 Fill in client card" },
+  edit:   { ru: "✏️ Изменить карточку клиента",      en: "✏️ Edit client card" },
+  notify: { ru: "📱 Подключить уведомления",         en: "📱 Enable notifications" },
+  lang:   { ru: "🌐 English",                        en: "🌐 Русский" },
+  phone:  { ru: "📱 Поделиться номером телефона",     en: "📱 Share phone number" },
+};
+type BtnKey = keyof typeof BTN;
+function btn(key: BtnKey): string { return BTN[key][CURRENT_LANG]; }
+function isBtn(text: string, key: BtnKey): boolean { return text === BTN[key].ru || text === BTN[key].en; }
 
-// Поля медкарты по порядку (для показа по пунктам и редактирования)
+// Словарь статичных сообщений: русский → английский.
+// sendMessage переводит текст по этому словарю, если язык пользователя = en.
+const STR: Record<string, string> = {
+  "Спасибо! Теперь поделитесь номером телефона — он нужен, чтобы администратор мог с вами связаться.\n\nНажмите кнопку ниже 👇 (или просто напишите номер).":
+    "Thanks! Now share your phone number — we need it so the administrator can contact you.\n\nTap the button below 👇 (or just type the number).",
+  "К какому специалисту хотите записаться?": "Which specialist would you like to book?",
+  "Выберите удобную дату приёма:": "Choose a convenient appointment date:",
+  "Выберите удобное время:": "Choose a convenient time:",
+  "⚠️ Не удалось сохранить запись. Попробуйте ещё раз позже или позвоните: 8 800 123-45-67.":
+    "⚠️ Could not save the appointment. Please try again later or call: 8 800 123-45-67.",
+  "Запись отменена. Если что — нажмите /start, чтобы начать заново.":
+    "Appointment cancelled. If needed, tap /start to begin again.",
+  "🔎 Анализирую вашу жалобу…": "🔎 Analyzing your symptoms…",
+  "Это не диагноз — точную помощь окажет врач на приёме.": "This is not a diagnosis — a doctor will help you at the appointment.",
+  "Чтобы точнее подобрать врача, уточните, пожалуйста, ваш пол:": "To pick the right doctor, please specify your gender:",
+  "Спасибо! Опишите, что вас беспокоит, и я подскажу подходящего врача.": "Thanks! Describe what bothers you and I'll suggest the right doctor.",
+  "Опишите, пожалуйста, что вас беспокоит, текстом 🙂": "Please describe what bothers you in text 🙂",
+  "Похоже, номер неполный. Напишите телефон в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».":
+    "The number seems incomplete. Type it as +7XXXXXXXXXX or tap the “Share phone number” button.",
+  "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».":
+    "The number seems incomplete. Type it as +7XXXXXXXXXX or tap the “Share phone number” button.",
+  "✅ Готово! Уведомления подключены. Если вы записывались на сайте этим номером — пришлём подтверждение и напоминания сюда.":
+    "✅ Done! Notifications enabled. If you booked on the site with this number, we'll send confirmations and reminders here.",
+  "Напишите имя текстом (минимум 2 буквы).": "Type your name in text (at least 2 letters).",
+  "Напишите фамилию текстом.": "Type your last name in text.",
+  "Напишите возраст числом, например 35.": "Type your age as a number, e.g. 35.",
+  "Пожалуйста, выберите пол кнопкой выше 👆": "Please choose your gender with the button above 👆",
+  "Пожалуйста, выберите пол кнопкой 👇": "Please choose your gender with the button below 👇",
+  "Пожалуйста, выберите вариант кнопкой выше 👆": "Please choose an option with the button above 👆",
+  "✅ Ваша карточка клиента уже заполнена. Изменить данные можно в личном кабинете на сайте.":
+    "✅ Your client card is already filled in. You can change the data in your account on the site.",
+  "Заполним карточку клиента 🪪 Это займёт минуту, и врач будет готов к вашему приёму.\n\n<b>Шаг 1.</b> Напишите ваше <b>имя</b>:":
+    "Let's fill in your client card 🪪 It takes a minute, and the doctor will be ready for your appointment.\n\n<b>Step 1.</b> Type your <b>first name</b>:",
+  "<b>Шаг 2.</b> Ваша <b>фамилия</b>:": "<b>Step 2.</b> Your <b>last name</b>:",
+  "<b>Шаг 3.</b> Ваш <b>номер телефона</b> — нажмите кнопку ниже или напишите номер:":
+    "<b>Step 3.</b> Your <b>phone number</b> — tap the button below or type it:",
+  "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?": "<b>Step 4.</b> How <b>old</b> are you (full years)?",
+  "<b>Шаг 5.</b> Укажите ваш <b>пол</b>:": "<b>Step 5.</b> Specify your <b>gender</b>:",
+  "<b>Шаг 6.</b> Ваш <b>email</b> (по желанию). Напишите почту или отправьте «-», чтобы пропустить:":
+    "<b>Step 6.</b> Your <b>email</b> (optional). Type it or send “-” to skip:",
+  "<b>Шаг 7.</b> Хронические <b>болезни</b> и диагнозы (или «-», если нет):":
+    "<b>Step 7.</b> Chronic <b>conditions</b> and diagnoses (or “-” if none):",
+  "<b>Шаг 8.</b> <b>Аллергии</b> (или «-», если нет):": "<b>Step 8.</b> <b>Allergies</b> (or “-” if none):",
+  "<b>Шаг 9.</b> Перенесённые <b>операции</b> (или «-», если не было):":
+    "<b>Step 9.</b> Past <b>surgeries</b> (or “-” if none):",
+  "<b>Шаг 10.</b> Постоянные <b>лекарства</b> (или «-», если нет). Это последний вопрос:":
+    "<b>Step 10.</b> Regular <b>medications</b> (or “-” if none). This is the last question:",
+  "⚠️ Не удалось сохранить карточку. Попробуйте позже.": "⚠️ Could not save the card. Please try later.",
+  "Готово! Изменения сохранены. 💙": "Done! Changes saved. 💙",
+  "Выберите новый <b>пол</b>:": "Choose your new <b>gender</b>:",
+  "✅ «Пол» обновлён.": "✅ “Gender” updated.",
+  "✅ «Телефон» обновлён.": "✅ “Phone” updated.",
+  "Ссылка для входа устарела. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.":
+    "The login link has expired. Go back to the site and tap “Log in with Telegram” again.",
+  "Не удалось распознать номер телефона. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.":
+    "Could not recognize the phone number. Go back to the site and tap “Log in with Telegram” again.",
+  "Язык переключён на русский. 🇷🇺": "Language switched to English. 🇬🇧",
+};
+function tr(text: string): string {
+  return CURRENT_LANG === "en" && STR[text] ? STR[text] : text;
+}
+
+// Поля карточки клиента (подписи на двух языках) — для показа и редактирования
 const CARD_FIELDS = [
-  { key: "first_name",  label: "Имя" },
-  { key: "last_name",   label: "Фамилия" },
-  { key: "phone",       label: "Телефон" },
-  { key: "age",         label: "Возраст" },
-  { key: "gender",      label: "Пол" },
-  { key: "email",       label: "Email" },
-  { key: "diseases",    label: "Хронические болезни" },
-  { key: "allergies",   label: "Аллергии" },
-  { key: "surgeries",   label: "Операции" },
-  { key: "medications", label: "Лекарства" },
+  { key: "first_name",  ru: "Имя",                 en: "First name" },
+  { key: "last_name",   ru: "Фамилия",             en: "Last name" },
+  { key: "phone",       ru: "Телефон",             en: "Phone" },
+  { key: "age",         ru: "Возраст",             en: "Age" },
+  { key: "gender",      ru: "Пол",                 en: "Gender" },
+  { key: "email",       ru: "Email",               en: "Email" },
+  { key: "diseases",    ru: "Хронические болезни", en: "Chronic conditions" },
+  { key: "allergies",   ru: "Аллергии",            en: "Allergies" },
+  { key: "surgeries",   ru: "Операции",            en: "Surgeries" },
+  { key: "medications", ru: "Лекарства",           en: "Medications" },
 ];
+function fieldLabel(f: any): string { return f[CURRENT_LANG]; }
+
 // Красивое значение поля для показа
 function cardValue(p: any, key: string): string {
   const v = p?.[key];
   if (v === null || v === undefined || v === "") return "—";
   if (key === "phone") return "+7" + v;
-  if (key === "gender") return v === "м" ? "Мужской" : v === "ж" ? "Женский" : String(v);
+  if (key === "gender") {
+    if (v === "м") return CURRENT_LANG === "en" ? "Male" : "Мужской";
+    if (v === "ж") return CURRENT_LANG === "en" ? "Female" : "Женский";
+    return String(v);
+  }
   return String(v);
 }
-
-// Запасное статичное меню (если вдруг не удалось определить пациента)
-const mainMenu = {
-  keyboard: [
-    [{ text: BOOK_BTN }],
-    [{ text: CARD_BTN }],
-    [{ text: "📱 Подключить уведомления", request_contact: true }],
-  ],
-  resize_keyboard: true,
-};
 
 // ---- Память о пациенте: ищем его медкарту по Telegram ID ----
 async function getPatientByChat(chat_id: number) {
@@ -102,13 +172,14 @@ function cardFilled(p: any): boolean {
   return !!(p && p.first_name && p.phone);
 }
 
-// Главное меню — динамическое: пока медкарта не заполнена, предлагаем её заполнить;
-// после заполнения эту кнопку больше НЕ показываем (вместо неё — «Моя медкарта»).
+// Главное меню — динамическое: пока карточка клиента не заполнена, предлагаем её
+// заполнить; после заполнения показываем «Изменить карточку клиента».
 async function menuFor(chat_id: number) {
   const p = await getPatientByChat(chat_id);
-  const rows: unknown[] = [[{ text: BOOK_BTN }]];
-  rows.push([{ text: cardFilled(p) ? EDIT_BTN : CARD_BTN }]);
-  rows.push([{ text: "📱 Подключить уведомления", request_contact: true }]);
+  const rows: unknown[] = [[{ text: btn("book") }]];
+  rows.push([{ text: cardFilled(p) ? btn("edit") : btn("card") }]);
+  rows.push([{ text: btn("notify"), request_contact: true }]);
+  rows.push([{ text: btn("lang") }]); // переключение языка RU/EN
   return { keyboard: rows, resize_keyboard: true };
 }
 
@@ -155,11 +226,10 @@ async function sendLoginCodeForPhone(chat_id: number, phoneRaw: string) {
     expires_at: new Date(Date.now() + 5 * 60000).toISOString(),
     created_at: new Date().toISOString(),
   });
-  return sendMessage(
-    chat_id,
-    `🔐 <b>Код для входа в личный кабинет</b>\n\nВаш код: <b>${code}</b>\n\nВведите его на сайте, чтобы войти. Код действует 5 минут. Никому не сообщайте его.`,
-    { reply_markup: await menuFor(chat_id) },
-  );
+  const codeMsg = CURRENT_LANG === "en"
+    ? `🔐 <b>Login code for your account</b>\n\nYour code: <b>${code}</b>\n\nEnter it on the site to log in. The code is valid for 5 minutes. Don't share it with anyone.`
+    : `🔐 <b>Код для входа в личный кабинет</b>\n\nВаш код: <b>${code}</b>\n\nВведите его на сайте, чтобы войти. Код действует 5 минут. Никому не сообщайте его.`;
+  return sendMessage(chat_id, codeMsg, { reply_markup: await menuFor(chat_id) });
 }
 
 // Старый способ (ссылка с токеном code_<token>) — оставлен для совместимости.
@@ -237,18 +307,17 @@ const confirmKeyboard = {
 async function startBooking(chat_id: number, user: any) {
   await saveState(chat_id, { state: { step: "name", data: {} } });
   const greetName = user?.full_name ? `, ${user.full_name}` : "";
-  await sendMessage(
-    chat_id,
-    `Отлично${greetName}! Запишу вас на приём за минуту. 🩺\n\nКак вас зовут? (Фамилия и имя)`,
-    { reply_markup: removeKeyboard },
-  );
+  const msg = CURRENT_LANG === "en"
+    ? `Great${greetName}! I'll book your appointment in a minute. 🩺\n\nWhat's your name? (Last and first name)`
+    : `Отлично${greetName}! Запишу вас на приём за минуту. 🩺\n\nКак вас зовут? (Фамилия и имя)`;
+  await sendMessage(chat_id, msg, { reply_markup: removeKeyboard });
 }
 
 async function askPhone(chat_id: number) {
   await sendMessage(
     chat_id,
     "Спасибо! Теперь поделитесь номером телефона — он нужен, чтобы администратор мог с вами связаться.\n\nНажмите кнопку ниже 👇 (или просто напишите номер).",
-    { reply_markup: phoneKeyboard },
+    { reply_markup: phoneKb() },
   );
 }
 
@@ -281,15 +350,15 @@ async function askTime(chat_id: number, data: any) {
 function summaryText(data: any) {
   const d = new Date(`${data.date}T${data.time}:00${TZ_OFFSET}`);
   const human = `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}, ${data.time}`;
-  const docLine = data.doctor && data.doctor !== "—" ? `\n👨‍⚕️ Врач: <b>${data.doctor}</b>` : "";
-  return (
-    "Проверьте запись:\n\n" +
-    `👤 Имя: <b>${data.full_name}</b>\n` +
-    `📞 Телефон: <b>${data.phone}</b>\n` +
-    `🩺 Специалист: <b>${data.specialty}</b>${docLine}\n` +
-    `📅 Когда: <b>${human}</b>\n\n` +
-    "Всё верно?"
-  );
+  const en = CURRENT_LANG === "en";
+  const docLine = data.doctor && data.doctor !== "—" ? `\n👨‍⚕️ ${en ? "Doctor" : "Врач"}: <b>${data.doctor}</b>` : "";
+  return en
+    ? "Please check the appointment:\n\n" +
+      `👤 Name: <b>${data.full_name}</b>\n📞 Phone: <b>${data.phone}</b>\n` +
+      `🩺 Specialist: <b>${data.specialty}</b>${docLine}\n📅 When: <b>${human}</b>\n\nIs everything correct?`
+    : "Проверьте запись:\n\n" +
+      `👤 Имя: <b>${data.full_name}</b>\n📞 Телефон: <b>${data.phone}</b>\n` +
+      `🩺 Специалист: <b>${data.specialty}</b>${docLine}\n📅 Когда: <b>${human}</b>\n\nВсё верно?`;
 }
 
 async function askConfirm(chat_id: number, data: any) {
@@ -327,16 +396,12 @@ async function finishBooking(chat_id: number, data: any) {
 
   const d = new Date(appointment_at);
   const human = `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}, ${data.time}`;
-  await sendMessage(
-    chat_id,
-    `✅ <b>Готово! Вы записаны.</b>\n\n` +
-      `🩺 Специалист: <b>${data.specialty}</b>\n` +
-      `📅 Когда: <b>${human}</b>\n\n` +
-      `Мы напомним вам <b>за день</b> и <b>за час</b> до приёма.\n` +
-      `Если планы изменятся — позвоните: 8 800 123-45-67.\n\n` +
-      `Будьте здоровы! 💙`,
-    { reply_markup: removeKeyboard },
-  );
+  const done = CURRENT_LANG === "en"
+    ? `✅ <b>Done! You're booked.</b>\n\n🩺 Specialist: <b>${data.specialty}</b>\n📅 When: <b>${human}</b>\n\n` +
+      `We'll remind you <b>a day</b> and <b>an hour</b> before.\nIf your plans change, call: 8 800 123-45-67.\n\nStay healthy! 💙`
+    : `✅ <b>Готово! Вы записаны.</b>\n\n🩺 Специалист: <b>${data.specialty}</b>\n📅 Когда: <b>${human}</b>\n\n` +
+      `Мы напомним вам <b>за день</b> и <b>за час</b> до приёма.\nЕсли планы изменятся — позвоните: 8 800 123-45-67.\n\nБудьте здоровы! 💙`;
+  await sendMessage(chat_id, done, { reply_markup: removeKeyboard });
 }
 
 // ============================================================
@@ -350,7 +415,7 @@ function isSkip(t: string) { return SKIP_WORDS.includes((t || "").trim().toLower
 async function startCard(chat_id: number) {
   const existing = await getPatientByChat(chat_id);
   if (cardFilled(existing)) {
-    return sendMessage(chat_id, "✅ Ваша медкарта уже заполнена. Изменить данные можно в личном кабинете на сайте.", { reply_markup: await menuFor(chat_id) });
+    return sendMessage(chat_id, "✅ Ваша карточка клиента уже заполнена. Изменить данные можно в личном кабинете на сайте.", { reply_markup: await menuFor(chat_id) });
   }
   const user = await getUser(chat_id);
   const card: Record<string, unknown> = {};
@@ -358,7 +423,7 @@ async function startCard(chat_id: number) {
   await saveState(chat_id, { state: { step: "card_first", data: { card } } });
   return sendMessage(
     chat_id,
-    "Заполним медкарту 🪪 Это займёт минуту, и врач будет готов к вашему приёму.\n\n<b>Шаг 1.</b> Напишите ваше <b>имя</b>:",
+    "Заполним карточку клиента 🪪 Это займёт минуту, и врач будет готов к вашему приёму.\n\n<b>Шаг 1.</b> Напишите ваше <b>имя</b>:",
     { reply_markup: removeKeyboard },
   );
 }
@@ -388,15 +453,22 @@ async function saveCard(chat_id: number, card: any) {
     state: {},
   });
   if (error) {
-    return sendMessage(chat_id, "⚠️ Не удалось сохранить медкарту. Попробуйте позже.", { reply_markup: await menuFor(chat_id) });
+    return sendMessage(chat_id, "⚠️ Не удалось сохранить карточку. Попробуйте позже.", { reply_markup: await menuFor(chat_id) });
   }
   const fio = [card.first_name, card.last_name].filter(Boolean).join(" ");
-  return sendMessage(
-    chat_id,
-    `✅ <b>Медкарта сохранена!</b>\n\n` +
+  const en = CURRENT_LANG === "en";
+  const saved = en
+    ? `✅ <b>Client card saved!</b>\n\n` +
+      `👤 ${fio}\n📞 +7${card.phone}\n🎂 Age: ${card.age}\n\n` +
+      `Thanks! The doctor will now see your card when you book an appointment. ` +
+      `You can change the data anytime in your account on the site.`
+    : `✅ <b>Карточка клиента сохранена!</b>\n\n` +
       `👤 ${fio}\n📞 +7${card.phone}\n🎂 Возраст: ${card.age}\n\n` +
       `Спасибо! Теперь врач увидит вашу карту, когда вы запишетесь на приём. ` +
-      `Изменить данные всегда можно в личном кабинете на сайте.`,
+      `Изменить данные всегда можно в личном кабинете на сайте.`;
+  return sendMessage(
+    chat_id,
+    saved,
     { reply_markup: await menuFor(chat_id) },
   );
 }
@@ -420,11 +492,11 @@ async function handleCardStep(chat_id: number, st: any, text: string) {
       return sendMessage(chat_id, "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?", { reply_markup: removeKeyboard });
     }
     await saveState(chat_id, { state: { step: "card_phone", data: { card } } });
-    return sendMessage(chat_id, "<b>Шаг 3.</b> Ваш <b>номер телефона</b> — нажмите кнопку ниже или напишите номер:", { reply_markup: phoneKeyboard });
+    return sendMessage(chat_id, "<b>Шаг 3.</b> Ваш <b>номер телефона</b> — нажмите кнопку ниже или напишите номер:", { reply_markup: phoneKb() });
   }
   if (st.step === "card_phone") {
     const digits = onlyDigits(t);
-    if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».", { reply_markup: phoneKeyboard });
+    if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».", { reply_markup: phoneKb() });
     card.phone = digits.slice(-10);
     await saveState(chat_id, { state: { step: "card_age", data: { card } } });
     return sendMessage(chat_id, "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?", { reply_markup: removeKeyboard });
@@ -476,15 +548,16 @@ async function showEditCard(chat_id: number) {
   const p = await getPatientByChat(chat_id);
   if (!cardFilled(p)) return startCard(chat_id); // карты ещё нет — предложим заполнить
 
-  let body = "🪪 <b>Ваша медкарта:</b>\n\n";
+  const en = CURRENT_LANG === "en";
+  let body = en ? "🪪 <b>Your client card:</b>\n\n" : "🪪 <b>Ваша карточка клиента:</b>\n\n";
   CARD_FIELDS.forEach((f, i) => {
-    body += `${i + 1}. ${f.label}: <b>${cardValue(p, f.key)}</b>\n`;
+    body += `${i + 1}. ${fieldLabel(f)}: <b>${cardValue(p, f.key)}</b>\n`;
   });
-  body += "\nКакой пункт вы хотите изменить?";
+  body += en ? "\nWhich item would you like to change?" : "\nКакой пункт вы хотите изменить?";
 
   // Кнопки с цифрами пунктов: 1–5, 6–10, затем «Готово»
   const nums = CARD_FIELDS.map((_, i) => ({ text: String(i + 1), callback_data: `ef:${i}` }));
-  const inline_keyboard = [nums.slice(0, 5), nums.slice(5, 10), [{ text: "✅ Готово", callback_data: "ef_done" }]];
+  const inline_keyboard = [nums.slice(0, 5), nums.slice(5, 10), [{ text: en ? "✅ Done" : "✅ Готово", callback_data: "ef_done" }]];
   return sendMessage(chat_id, body, { reply_markup: { inline_keyboard } });
 }
 
@@ -563,18 +636,25 @@ async function runSymptomAnalysis(chat_id: number, text: string, sex: string) {
   // специалист обязательно должен быть из нашего списка
   if (!specialties.includes(specialty)) specialty = "Терапевт";
 
-  let out = `🩺 Рекомендую обратиться к специалисту: <b>${specialty}</b>\n\n`;
+  const en = CURRENT_LANG === "en";
+  let out = en
+    ? `🩺 I recommend seeing a specialist: <b>${specialty}</b>\n\n`
+    : `🩺 Рекомендую обратиться к специалисту: <b>${specialty}</b>\n\n`;
   if (advice) out += advice + "\n\n";
   if (URGENCY[urgency]) out += URGENCY[urgency] + "\n\n";
-  out += "Это не диагноз — точную помощь окажет врач на приёме.";
+  out += en ? "This is not a diagnosis — a doctor will help you at the appointment." : "Это не диагноз — точную помощь окажет врач на приёме.";
 
   return sendMessage(chat_id, out, {
-    reply_markup: { inline_keyboard: [[{ text: `📅 Записаться к: ${specialty}`, callback_data: `bookspec:${specialty}` }]] },
+    reply_markup: { inline_keyboard: [[{ text: `📅 ${en ? "Book with" : "Записаться к"}: ${specialty}`, callback_data: `bookspec:${specialty}` }]] },
   });
 }
 
 // ---- Главный обработчик одного обновления от Telegram ----
 async function handleUpdate(update: any) {
+  // Язык пользователя — для всех ответов в этом обновлении
+  const _cid = update.callback_query?.message?.chat?.id ?? update.message?.chat?.id;
+  CURRENT_LANG = _cid ? ((await getUser(_cid))?.lang === "en" ? "en" : "ru") : "ru";
+
   // 1) Нажатие на кнопку (inline)
   if (update.callback_query) {
     const cq = update.callback_query;
@@ -593,11 +673,10 @@ async function handleUpdate(update: any) {
       const list = await loadSpecialties();
       const found = list.find((x) => x.spec === spec);
       await saveState(chat_id, { state: { step: "name", data: { specialty: spec, doctor: found?.doctor ?? null } } });
-      return sendMessage(
-        chat_id,
-        `Записываю вас к специалисту «${spec}». 🩺\n\nКак вас зовут? (Фамилия и имя)`,
-        { reply_markup: removeKeyboard },
-      );
+      const m = CURRENT_LANG === "en"
+        ? `Booking you with the specialist “${spec}”. 🩺\n\nWhat's your name? (Last and first name)`
+        : `Записываю вас к специалисту «${spec}». 🩺\n\nКак вас зовут? (Фамилия и имя)`;
+      return sendMessage(chat_id, m, { reply_markup: removeKeyboard });
     }
 
     // Изменение медкарты: завершить
@@ -612,17 +691,22 @@ async function handleUpdate(update: any) {
       const f = CARD_FIELDS[idx];
       if (!f) return;
       await saveState(chat_id, { state: { step: "edit_field", data: { fieldIdx: idx } } });
+      const en = CURRENT_LANG === "en";
       if (f.key === "gender") {
         return sendMessage(chat_id, "Выберите новый <b>пол</b>:", {
           reply_markup: { inline_keyboard: [[
-            { text: "👨 Мужской", callback_data: "eg:м" },
-            { text: "👩 Женский", callback_data: "eg:ж" },
+            { text: en ? "👨 Male" : "👨 Мужской", callback_data: "eg:м" },
+            { text: en ? "👩 Female" : "👩 Женский", callback_data: "eg:ж" },
           ]] },
         });
       }
-      const extra = f.key === "phone" ? { reply_markup: phoneKeyboard } : { reply_markup: removeKeyboard };
-      const tip = (["email","diseases","allergies","surgeries","medications"].includes(f.key)) ? " (или «-», чтобы очистить)" : "";
-      return sendMessage(chat_id, `Введите новое значение для пункта «<b>${f.label}</b>»${tip}:`, extra);
+      const extra = f.key === "phone" ? { reply_markup: phoneKb() } : { reply_markup: removeKeyboard };
+      const optional = ["email","diseases","allergies","surgeries","medications"].includes(f.key);
+      const tip = optional ? (en ? " (or “-” to clear)" : " (или «-», чтобы очистить)") : "";
+      const prompt = en
+        ? `Enter a new value for “<b>${fieldLabel(f)}</b>”${tip}:`
+        : `Введите новое значение для пункта «<b>${fieldLabel(f)}</b>»${tip}:`;
+      return sendMessage(chat_id, prompt, extra);
     }
 
     // Изменение медкарты: выбран пол
@@ -720,38 +804,27 @@ async function handleUpdate(update: any) {
     );
   }
 
+  // Переключение языка RU ⇄ EN
+  if (isBtn(text, "lang")) {
+    const newLang = CURRENT_LANG === "en" ? "ru" : "en";
+    await saveState(chat_id, { lang: newLang });
+    CURRENT_LANG = newLang;
+    return sendMessage(chat_id, "Язык переключён на русский. 🇷🇺", { reply_markup: await menuFor(chat_id) });
+  }
+
   // Нажата кнопка «Записаться» из главного меню
-  if (text === BOOK_BTN) {
+  if (isBtn(text, "book")) {
     return startBooking(chat_id, await getUser(chat_id));
   }
 
-  // Нажата кнопка «Заполнить медкарту»
-  if (text === CARD_BTN) {
+  // Нажата кнопка «Заполнить карточку клиента»
+  if (isBtn(text, "card")) {
     return startCard(chat_id);
   }
 
-  // Нажата кнопка «Изменить медкарту» — показываем карту по пунктам
-  if (text === EDIT_BTN) {
+  // Нажата кнопка «Изменить карточку клиента» — показываем карту по пунктам
+  if (isBtn(text, "edit")) {
     return showEditCard(chat_id);
-  }
-
-  // Нажата кнопка «Моя медкарта» — показываем краткую сводку
-  if (text === MYCARD_BTN) {
-    const p = await getPatientByChat(chat_id);
-    if (!cardFilled(p)) return startCard(chat_id);
-    const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
-    return sendMessage(
-      chat_id,
-      `🪪 <b>Ваша медкарта</b>\n\n` +
-        `👤 ${fio}\n📞 +7${p.phone}\n🎂 Возраст: ${p.age ?? "—"}\n` +
-        (p.gender ? `⚧ Пол: ${p.gender === "м" ? "мужской" : "женский"}\n` : "") +
-        (p.allergies ? `⚠️ Аллергии: ${p.allergies}\n` : "") +
-        (p.diseases ? `🩺 Болезни: ${p.diseases}\n` : "") +
-        (p.surgeries ? `🔪 Операции: ${p.surgeries}\n` : "") +
-        (p.medications ? `💊 Лекарства: ${p.medications}\n` : "") +
-        `\nИзменить данные можно в личном кабинете на сайте.`,
-      { reply_markup: await menuFor(chat_id) },
-    );
   }
 
   // Команда /start (возможно с параметром, например /start book со страницы сайта)
@@ -773,18 +846,22 @@ async function handleUpdate(update: any) {
     }
     // Узнаём пациента по Telegram ID — здороваемся по имени, если знаем
     const patient = await getPatientByChat(chat_id);
-    const hello = cardFilled(patient) ? `Здравствуйте, ${patient.first_name}! 👋` : "Здравствуйте! 👋";
-    const cardLine = cardFilled(patient)
-      ? "Ваша медкарта уже заполнена — врач увидит её при записи. 💙"
-      : "Новым пациентам советуем нажать <b>«Заполнить медкарту»</b> — врач будет готов к вашему приёму.";
-    return sendMessage(
-      chat_id,
-      `${hello} Это бот клиники <b>«Здоровье»</b>.\n\n` +
+    const filled = cardFilled(patient);
+    const en = CURRENT_LANG === "en";
+    const greet = en
+      ? `${filled ? `Hello, ${patient.first_name}! 👋` : "Hello! 👋"} This is the <b>“Zdorovie”</b> clinic bot.\n\n` +
+        "I'll help you book an appointment in a minute and send reminders.\n" +
+        (filled
+          ? "Your client card is already filled in — the doctor will see it when you book. 💙"
+          : "New patients: tap <b>“Fill in client card”</b> — the doctor will be ready for your appointment.") +
+        "\n\nChoose an action with the buttons below 👇"
+      : `${filled ? `Здравствуйте, ${patient.first_name}! 👋` : "Здравствуйте! 👋"} Это бот клиники <b>«Здоровье»</b>.\n\n` +
         "Я помогу записаться на приём за минуту и пришлю напоминания.\n" +
-        cardLine + "\n\n" +
-        "Выберите действие на кнопках ниже 👇",
-      { reply_markup: await menuFor(chat_id) },
-    );
+        (filled
+          ? "Ваша карточка клиента уже заполнена — врач увидит её при записи. 💙"
+          : "Новым пациентам советуем нажать <b>«Заполнить карточку клиента»</b> — врач будет готов к вашему приёму.") +
+        "\n\nВыберите действие на кнопках ниже 👇";
+    return sendMessage(chat_id, greet, { reply_markup: await menuFor(chat_id) });
   }
 
   // Текстовые ответы внутри диалога
@@ -824,21 +901,21 @@ async function handleUpdate(update: any) {
       });
     } else if (f.key === "phone") {
       const digits = onlyDigits(text);
-      if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».", { reply_markup: phoneKeyboard });
+      if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».", { reply_markup: phoneKb() });
       value = digits.slice(-10);
     } else if (f.key === "age") {
       const n = parseInt(onlyDigits(text), 10);
       if (!n || n < 1 || n > 120) return sendMessage(chat_id, "Напишите возраст числом, например 35.");
       value = n;
     } else if (f.key === "first_name" || f.key === "last_name") {
-      if (text.trim().length < 2) return sendMessage(chat_id, `Напишите ${f.label.toLowerCase()} текстом (минимум 2 буквы).`);
+      if (text.trim().length < 2) return sendMessage(chat_id, `Напишите ${fieldLabel(f).toLowerCase()} текстом (минимум 2 буквы).`);
       value = text.trim();
     } else {
       value = isSkip(text) ? null : text.trim(); // email и медицинские поля можно очистить «-»
     }
     await updatePatientField(chat_id, f.key, value);
     await saveState(chat_id, { state: {} });
-    await sendMessage(chat_id, `✅ «${f.label}» обновлено.`, { reply_markup: removeKeyboard });
+    await sendMessage(chat_id, CURRENT_LANG === "en" ? `✅ “${fieldLabel(f)}” updated.` : `✅ «${fieldLabel(f)}» обновлено.`, { reply_markup: removeKeyboard });
     return showEditCard(chat_id);
   }
 

@@ -131,7 +131,7 @@
     <div class="hero">
       <div class="ava" id="ava">👤</div>
       <div>
-        <h1 id="heroName">Ваша медкарта</h1>
+        <h1 id="heroName">Карточка клиента</h1>
         <span class="badge" id="heroPhone"></span>
       </div>
     </div>
@@ -163,7 +163,7 @@
         </div>
 
         <div class="block med">
-          <h2>🩺 Медицинская карта</h2>
+          <h2>🩺 Карточка клиента</h2>
           <p class="hint">Заполните заранее — врач увидит это перед приёмом и будет готов помочь.</p>
           <label for="f_diseases">Хронические болезни и диагнозы</label>
           <textarea id="f_diseases" placeholder="Напр.: гипертония, сахарный диабет 2 типа, гастрит…"></textarea>
@@ -176,7 +176,7 @@
           <label for="f_comments">Комментарии и пожелания</label>
           <textarea id="f_comments" placeholder="Любая важная для врача информация…"></textarea>
           <div class="save-bar">
-            <button class="btn" onclick="saveProfile()">💾 Сохранить медкарту</button>
+            <button class="btn" onclick="saveProfile()">💾 Сохранить карточку</button>
             <span class="msg" id="saveMsg"></span>
           </div>
         </div>
@@ -283,7 +283,7 @@
       show("cabinet");
       get("logoutBtn").style.display = "inline-block";
       const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
-      get("heroName").textContent = fio || "Ваша медкарта";
+      get("heroName").textContent = fio || "Карточка клиента";
       get("ava").textContent = (p.first_name || "👤").trim().charAt(0).toUpperCase();
       get("heroPhone").textContent = "📞 " + fmtPhone(p.phone);
       fill("f_first", p.first_name); fill("f_last", p.last_name);
