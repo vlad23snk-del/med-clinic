@@ -131,7 +131,14 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
-  // Медкарта пациента по записи: врач видит карту только своих пациентов
+  // Подписанная ссылка на файл врачебной карточки (живёт 1 час)
+  async function signedFileUrl(path: string | null): Promise<string | null> {
+    if (!path) return null;
+    const { data } = await db.storage.from("medcards").createSignedUrl(path, 3600);
+    return data?.signedUrl ?? null;
+  }
+
+  // Карта пациента по записи: врач видит карту только своих пациентов
   if (body.action === "patient") {
     const target = phone10(body.phone);
     if (target.length !== 10) return json({ error: "Некорректный телефон" }, 400);
@@ -140,14 +147,65 @@ Deno.serve(async (req) => {
     const isMine = mineList.some((a: any) => phone10(a.phone) === target);
     if (!isMine) return json({ error: "Нет доступа к этому пациенту" }, 403);
     const { data: patient } = await db.from("patients").select("*").eq("phone", target).maybeSingle();
-    if (!patient) return json({ ok: true, patient: null }); // карта ещё не заполнена
-    const card = {
+    // «карточка клиента» (заполняет пациент) — может отсутствовать
+    const card = patient ? {
       first_name: patient.first_name, last_name: patient.last_name,
       birth_date: patient.birth_date, age: patient.age, gender: patient.gender, blood_type: patient.blood_type,
       diseases: patient.diseases, allergies: patient.allergies,
       surgeries: patient.surgeries, medications: patient.medications, comments: patient.comments,
+    } : null;
+    // «врачебная карточка» (создаёт врач): заметки + файл
+    const doctorCard = {
+      notes: patient?.doctor_notes ?? null,
+      fileName: patient?.doctor_file_name ?? null,
+      fileUrl: await signedFileUrl(patient?.doctor_file_path ?? null),
     };
-    return json({ ok: true, patient: card });
+    return json({ ok: true, patient: card, doctorCard });
+  }
+
+  // Сохранение врачебной карточки (только врач): заметки + загрузка файла
+  if (body.action === "save_medcard") {
+    const target = phone10(body.phone);
+    if (target.length !== 10) return json({ error: "Некорректный телефон" }, 400);
+    const mineList = await appointmentsFor(doc);
+    if (!mineList.some((a: any) => phone10(a.phone) === target)) return json({ error: "Нет доступа к этому пациенту" }, 403);
+
+    // гарантируем строку пациента (врач может создать карточку даже без записи пациента)
+    let { data: patient } = await db.from("patients").select("phone, doctor_file_path").eq("phone", target).maybeSingle();
+    if (!patient) {
+      const { data: created } = await db.from("patients").insert({ phone: target }).select("phone, doctor_file_path").maybeSingle();
+      patient = created;
+    }
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (typeof body.notes === "string") patch.doctor_notes = body.notes.trim() || null;
+
+    if (body.fileBase64 && body.fileName) {
+      let bytes: Uint8Array;
+      try { bytes = Uint8Array.from(atob(body.fileBase64), (c) => c.charCodeAt(0)); }
+      catch { return json({ error: "Файл повреждён" }, 400); }
+      if (bytes.length > 8 * 1024 * 1024) return json({ error: "Файл слишком большой (макс. 8 МБ)" }, 400);
+      const safe = String(body.fileName).replace(/[^\w.\-]+/g, "_").slice(-80);
+      const path = `${target}/${Date.now()}-${safe}`;
+      const { error: upErr } = await db.storage.from("medcards").upload(path, bytes, {
+        contentType: body.fileType || "application/octet-stream", upsert: true,
+      });
+      if (upErr) return json({ error: "Не удалось загрузить файл: " + upErr.message }, 500);
+      if (patient?.doctor_file_path) { try { await db.storage.from("medcards").remove([patient.doctor_file_path]); } catch (_) { /* ignore */ } }
+      patch.doctor_file_path = path;
+      patch.doctor_file_name = body.fileName;
+      patch.doctor_file_updated = new Date().toISOString();
+    }
+
+    const { error } = await db.from("patients").update(patch).eq("phone", target);
+    if (error) return json({ error: error.message }, 500);
+
+    const { data: p2 } = await db.from("patients").select("doctor_notes, doctor_file_path, doctor_file_name").eq("phone", target).maybeSingle();
+    return json({ ok: true, doctorCard: {
+      notes: p2?.doctor_notes ?? null,
+      fileName: p2?.doctor_file_name ?? null,
+      fileUrl: await signedFileUrl(p2?.doctor_file_path ?? null),
+    } });
   }
 
   return json({ error: "Неизвестное действие" }, 400);

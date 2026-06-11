@@ -98,7 +98,22 @@
     .mini { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:6px; }
     .mini .box { background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
     .mini .box .lbl { font-size:11px; }
-    .mcard-empty { text-align:center; color:var(--muted); padding:24px 6px; }
+    .mcard-empty { text-align:center; color:var(--muted); padding:18px 6px; }
+    .dc-title { font-weight:800; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
+    .dc-title .dc-sub { font-weight:600; text-transform:none; letter-spacing:0; }
+    .doccard { margin-top:18px; padding:18px; border:1.5px solid rgba(31,107,255,.25); border-radius:16px; background:#f5f9ff; }
+    .dc-head { font-weight:800; font-size:15px; display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .dc-badge { font-size:11px; font-weight:700; color:#1d4ed8; background:#e0e9ff; padding:2px 9px; border-radius:999px; }
+    .mc-notes { width:100%; min-height:90px; padding:12px; border:1.5px solid #cdd9ea; border-radius:11px; font-family:inherit; font-size:14px; outline:none; resize:vertical; }
+    .mc-notes:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(31,107,255,.12); }
+    .mc-filewrap { margin:10px 0 6px; font-size:14px; }
+    .mc-file { color:var(--primary); font-weight:700; text-decoration:none; }
+    .mc-file:hover { text-decoration:underline; }
+    .mc-upload { display:inline-block; font-size:13px; font-weight:700; color:#334155; cursor:pointer; }
+    .mc-upload input { display:block; margin-top:6px; font-size:13px; }
+    .mc-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:12px; }
+    .mc-msg { font-size:13px; }
+    .mc-msg.ok { color:#16a34a; } .mc-msg.err { color:#dc2626; }
 
     @media (max-width:620px){ .stats { grid-template-columns:1fr; } .plist { grid-template-columns:1fr; } .mini { grid-template-columns:1fr; } }
   </style>
@@ -331,9 +346,34 @@
     }
     const GENDER = { "м": "Мужской", "ж": "Женский" };
 
+    let currentCardPhone = "";
+
+    function fileLineHtml(dc) {
+      return dc && dc.fileUrl
+        ? `<a href="${dc.fileUrl}" target="_blank" rel="noopener" class="mc-file">📎 ${esc(dc.fileName || "Файл")}</a>`
+        : `<span class="muted">Файл не загружен</span>`;
+    }
+    function doctorCardHtml(dc) {
+      dc = dc || {};
+      return `
+        <div class="doccard">
+          <div class="dc-head">🩺 Врачебная медкарта <span class="dc-badge">создаёт врач</span></div>
+          <textarea id="mcNotes" class="mc-notes" placeholder="Записи врача: диагнозы, назначения, наблюдения…">${esc(dc.notes || "")}</textarea>
+          <div class="mc-filewrap">${fileLineHtml(dc)}</div>
+          <label class="mc-upload">📁 Прикрепить файл (PDF или фото, до 8 МБ)
+            <input type="file" id="mcFile" accept=".pdf,image/*" />
+          </label>
+          <div class="mc-actions">
+            <button class="cardbtn" onclick="saveMedcard()">💾 Сохранить врачебную медкарту</button>
+            <span class="mc-msg" id="mcMsg"></span>
+          </div>
+        </div>`;
+    }
+
     async function openCard(phone, name) {
       const modal = get("cardModal");
-      get("cardName").textContent = "Карточка клиента: " + (name || "Пациент");
+      currentCardPhone = phone || "";
+      get("cardName").textContent = "Карточка пациента: " + (name || "Пациент");
       get("cardPhone").textContent = "📞 " + fmtPhone(phone);
       get("cardBody").innerHTML = '<div class="mcard-empty">Загрузка…</div>';
       modal.classList.add("open");
@@ -342,31 +382,69 @@
       if (r.status === 401) { logout(); return; }
       if (r.status !== 200) { get("cardBody").innerHTML = `<div class="mcard-empty">${esc(r.data.error || "Не удалось загрузить карту")}</div>`; return; }
       const p = r.data.patient;
-      if (!p) {
-        get("cardBody").innerHTML = '<div class="mcard-empty">🗂️ Пациент ещё не заполнил карточку клиента в личном кабинете.<br>Основная информация по записи — в карточке слева.</div>';
-        return;
-      }
-
-      const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
-      const age = ageFrom(p.birth_date) || (p.age ? p.age + " лет" : "");
-      const birth = p.birth_date ? new Date(p.birth_date).toLocaleDateString("ru-RU") : "—";
-      const mini = `<div class="mini">
-        <div class="box"><div class="lbl">Возраст</div><div class="val">${age || "—"}</div></div>
-        <div class="box"><div class="lbl">Пол</div><div class="val">${GENDER[p.gender] || "—"}</div></div>
-        <div class="box"><div class="lbl">Группа крови</div><div class="val">${esc(p.blood_type) || "—"}</div></div>
-      </div>`;
+      const dc = r.data.doctorCard || {};
 
       const row = (lbl, val, alert) => `<div class="mrow ${alert ? "alert" : ""}"><div class="lbl">${lbl}</div><div class="val">${val ? esc(val) : "—"}</div></div>`;
 
+      let clientHtml;
+      if (!p) {
+        clientHtml = '<div class="mcard-empty">🗂️ Пациент ещё не заполнил карточку клиента в личном кабинете.</div>';
+      } else {
+        const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
+        const age = ageFrom(p.birth_date) || (p.age ? p.age + " лет" : "");
+        const birth = p.birth_date ? new Date(p.birth_date).toLocaleDateString("ru-RU") : "—";
+        const mini = `<div class="mini">
+          <div class="box"><div class="lbl">Возраст</div><div class="val">${age || "—"}</div></div>
+          <div class="box"><div class="lbl">Пол</div><div class="val">${GENDER[p.gender] || "—"}</div></div>
+          <div class="box"><div class="lbl">Группа крови</div><div class="val">${esc(p.blood_type) || "—"}</div></div>
+        </div>`;
+        clientHtml =
+          (fio ? `<div class="mrow"><div class="lbl">ФИО</div><div class="val">${esc(fio)}</div></div>` : "") +
+          `<div class="mrow"><div class="lbl">Дата рождения</div><div class="val">${birth}</div></div>` +
+          mini +
+          row("⚠️ Аллергии", p.allergies, true) +
+          row("🩺 Хронические болезни и диагнозы", p.diseases) +
+          row("🔪 Перенесённые операции", p.surgeries) +
+          row("💊 Постоянные лекарства", p.medications) +
+          row("💬 Комментарии пациента", p.comments);
+      }
+
       get("cardBody").innerHTML =
-        (fio ? `<div class="mrow"><div class="lbl">ФИО</div><div class="val">${esc(fio)}</div></div>` : "") +
-        `<div class="mrow"><div class="lbl">Дата рождения</div><div class="val">${birth}</div></div>` +
-        mini +
-        row("⚠️ Аллергии", p.allergies, true) +
-        row("🩺 Хронические болезни и диагнозы", p.diseases) +
-        row("🔪 Перенесённые операции", p.surgeries) +
-        row("💊 Постоянные лекарства", p.medications) +
-        row("💬 Комментарии пациента", p.comments);
+        `<div class="dc-title">🪪 Карточка клиента <span class="dc-sub">(заполняет пациент)</span></div>` +
+        clientHtml +
+        doctorCardHtml(dc);
+    }
+
+    function fileToBase64(file) {
+      return new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(String(reader.result).split(",")[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+    }
+    async function saveMedcard() {
+      const msg = get("mcMsg");
+      msg.className = "mc-msg"; msg.textContent = "Сохраняем…";
+      const payload = { action: "save_medcard", phone: currentCardPhone, notes: get("mcNotes").value };
+      const f = get("mcFile").files && get("mcFile").files[0];
+      if (f) {
+        if (f.size > 8 * 1024 * 1024) { msg.className = "mc-msg err"; msg.textContent = "Файл больше 8 МБ"; return; }
+        payload.fileBase64 = await fileToBase64(f);
+        payload.fileName = f.name;
+        payload.fileType = f.type;
+      }
+      const r = await api(payload);
+      if (r.status === 401) { logout(); return; }
+      if (r.data.ok) {
+        msg.className = "mc-msg ok"; msg.textContent = "✅ Сохранено";
+        const wrap = document.querySelector(".mc-filewrap");
+        if (wrap) wrap.innerHTML = fileLineHtml(r.data.doctorCard);
+        get("mcFile").value = "";
+        setTimeout(() => { msg.textContent = ""; }, 2500);
+      } else {
+        msg.className = "mc-msg err"; msg.textContent = r.data.error || "Не удалось сохранить";
+      }
     }
     function closeCard() { get("cardModal").classList.remove("open"); }
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeCard(); });

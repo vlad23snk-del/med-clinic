@@ -67,6 +67,12 @@ html[data-theme="dark"] .tools select {
 html[data-theme="dark"] input::placeholder,
 html[data-theme="dark"] textarea::placeholder { color: #6b7c94; }
 
+/* ---- Врачебная медкарта в окне врача ---- */
+html[data-theme="dark"] .doccard { background: #0e1a30 !important; border-color: var(--line) !important; }
+html[data-theme="dark"] .mc-notes { background: #0b1526 !important; color: var(--ink) !important; border-color: var(--line) !important; }
+html[data-theme="dark"] .mc-upload { color: #c4d0e2 !important; }
+html[data-theme="dark"] .dc-badge { background: #1e2d4a !important; color: #93b4ff !important; }
+
 /* ---- Таблицы (админ-панель / кабинет врача) ---- */
 html[data-theme="dark"] th { background: #0e1a30 !important; color: #cbd5e1 !important; }
 html[data-theme="dark"] td { border-color: var(--line) !important; }
