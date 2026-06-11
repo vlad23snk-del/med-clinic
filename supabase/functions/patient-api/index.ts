@@ -104,7 +104,7 @@ async function phoneByToken(token: string): Promise<string | null> {
 }
 
 // --- Поля медкарты, которые клиент может менять ---
-const PROFILE_FIELDS = ["first_name", "last_name", "birth_date", "gender", "blood_type", "email", "diseases", "allergies", "surgeries", "medications", "comments"];
+const PROFILE_FIELDS = ["first_name", "last_name", "birth_date", "age", "gender", "blood_type", "email", "diseases", "allergies", "surgeries", "medications", "comments"];
 
 function publicProfile(p: any, phone: string) {
   const out: Record<string, unknown> = { phone };
@@ -237,7 +237,12 @@ Deno.serve(async (req) => {
       if (f in p) {
         let v = p[f];
         if (typeof v === "string") v = v.trim();
-        patch[f] = v === "" ? null : v;
+        if (f === "age") {
+          const n = parseInt(String(v).replace(/\D/g, ""), 10); // возраст — целое число
+          patch.age = n >= 1 && n <= 120 ? n : null;
+        } else {
+          patch[f] = v === "" ? null : v;
+        }
       }
     }
 

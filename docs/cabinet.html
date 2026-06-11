@@ -146,14 +146,16 @@
           </div>
           <div class="row2">
             <div><label for="f_birth">Дата рождения</label><input id="f_birth" type="date" /></div>
+            <div><label for="f_age">Возраст</label><input id="f_age" type="number" min="1" max="120" placeholder="напр. 35" /></div>
+          </div>
+          <div class="row2">
             <div><label for="f_gender">Пол</label>
               <select id="f_gender"><option value="">—</option><option value="м">Мужской</option><option value="ж">Женский</option></select>
             </div>
-          </div>
-          <div class="row2">
-            <div><label for="f_phone">Телефон</label><input id="f_phone" type="tel" /></div>
             <div><label for="f_blood">Группа крови</label><input id="f_blood" placeholder="напр. II (A) Rh+" /></div>
           </div>
+          <label for="f_phone">Телефон</label>
+          <input id="f_phone" type="tel" />
           <label for="f_email">Email (необязательно)</label>
           <input id="f_email" type="email" placeholder="для копий уведомлений" />
         </div>
@@ -283,7 +285,7 @@
       get("ava").textContent = (p.first_name || "👤").trim().charAt(0).toUpperCase();
       get("heroPhone").textContent = "📞 " + fmtPhone(p.phone);
       fill("f_first", p.first_name); fill("f_last", p.last_name);
-      fill("f_birth", p.birth_date); fill("f_gender", p.gender);
+      fill("f_birth", p.birth_date); fill("f_age", p.age); fill("f_gender", p.gender);
       fill("f_phone", fmtPhone(p.phone)); fill("f_blood", p.blood_type); fill("f_email", p.email);
       fill("f_diseases", p.diseases); fill("f_allergies", p.allergies);
       fill("f_surgeries", p.surgeries); fill("f_medications", p.medications); fill("f_comments", p.comments);
@@ -295,7 +297,7 @@
       msg.className = "msg"; msg.textContent = "Сохраняем…";
       const profile = {
         first_name: get("f_first").value, last_name: get("f_last").value,
-        birth_date: get("f_birth").value || null, gender: get("f_gender").value,
+        birth_date: get("f_birth").value || null, age: get("f_age").value, gender: get("f_gender").value,
         phone: get("f_phone").value, blood_type: get("f_blood").value, email: get("f_email").value,
         diseases: get("f_diseases").value, allergies: get("f_allergies").value,
         surgeries: get("f_surgeries").value, medications: get("f_medications").value, comments: get("f_comments").value,

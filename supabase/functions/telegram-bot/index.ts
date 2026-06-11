@@ -55,14 +55,39 @@ const removeKeyboard = { remove_keyboard: true };
 // Текст кнопки запуска записи (главное меню)
 const BOOK_BTN = "📅 Записаться на приём";
 
-// Главное меню (показывается на /start)
+// Кнопки медкарты
+const CARD_BTN = "🪪 Заполнить медкарту";
+const MYCARD_BTN = "🪪 Моя медкарта";
+
+// Запасное статичное меню (если вдруг не удалось определить пациента)
 const mainMenu = {
   keyboard: [
     [{ text: BOOK_BTN }],
+    [{ text: CARD_BTN }],
     [{ text: "📱 Подключить уведомления", request_contact: true }],
   ],
   resize_keyboard: true,
 };
+
+// ---- Память о пациенте: ищем его медкарту по Telegram ID ----
+async function getPatientByChat(chat_id: number) {
+  const { data } = await db.from("patients").select("*").eq("telegram_chat_id", chat_id).maybeSingle();
+  return data;
+}
+// Карта считается заполненной, если есть имя и телефон
+function cardFilled(p: any): boolean {
+  return !!(p && p.first_name && p.phone);
+}
+
+// Главное меню — динамическое: пока медкарта не заполнена, предлагаем её заполнить;
+// после заполнения эту кнопку больше НЕ показываем (вместо неё — «Моя медкарта»).
+async function menuFor(chat_id: number) {
+  const p = await getPatientByChat(chat_id);
+  const rows: unknown[] = [[{ text: BOOK_BTN }]];
+  rows.push([{ text: cardFilled(p) ? MYCARD_BTN : CARD_BTN }]);
+  rows.push([{ text: "📱 Подключить уведомления", request_contact: true }]);
+  return { keyboard: rows, resize_keyboard: true };
+}
 
 // ---- Работа с состоянием диалога (хранится в таблице telegram_users) ----
 async function getUser(chat_id: number) {
@@ -92,7 +117,7 @@ async function sendLoginCodeForPhone(chat_id: number, phoneRaw: string) {
     return sendMessage(
       chat_id,
       "Не удалось распознать номер телефона. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.",
-      { reply_markup: mainMenu },
+      { reply_markup: await menuFor(chat_id) },
     );
   }
   // Привязываем телефон к этому чату (для входа + будущих подтверждений и напоминаний)
@@ -110,7 +135,7 @@ async function sendLoginCodeForPhone(chat_id: number, phoneRaw: string) {
   return sendMessage(
     chat_id,
     `🔐 <b>Код для входа в личный кабинет</b>\n\nВаш код: <b>${code}</b>\n\nВведите его на сайте, чтобы войти. Код действует 5 минут. Никому не сообщайте его.`,
-    { reply_markup: mainMenu },
+    { reply_markup: await menuFor(chat_id) },
   );
 }
 
@@ -118,7 +143,7 @@ async function sendLoginCodeForPhone(chat_id: number, phoneRaw: string) {
 async function sendLoginCode(chat_id: number, token: string) {
   const { data: row } = await db.from("tg_login").select("phone, expires_at").eq("token", token).maybeSingle();
   if (!row || new Date(row.expires_at).getTime() < Date.now()) {
-    return sendMessage(chat_id, "Ссылка для входа устарела. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.", { reply_markup: mainMenu });
+    return sendMessage(chat_id, "Ссылка для входа устарела. Вернитесь на сайт и нажмите «Войти с помощью Telegram» ещё раз.", { reply_markup: await menuFor(chat_id) });
   }
   await db.from("tg_login").delete().eq("token", token);
   return sendLoginCodeForPhone(chat_id, row.phone);
@@ -291,6 +316,137 @@ async function finishBooking(chat_id: number, data: any) {
   );
 }
 
+// ============================================================
+//  Мастер заполнения медкарты в Telegram (пошаговый опрос)
+//  Сохраняет в ту же таблицу patients, что и сайт. Привязывает к Telegram ID.
+// ============================================================
+const SKIP_WORDS = ["-", "–", "—", "нет", "пропустить", "skip"];
+function isSkip(t: string) { return SKIP_WORDS.includes((t || "").trim().toLowerCase()); }
+
+// Начать заполнение медкарты
+async function startCard(chat_id: number) {
+  const existing = await getPatientByChat(chat_id);
+  if (cardFilled(existing)) {
+    return sendMessage(chat_id, "✅ Ваша медкарта уже заполнена. Изменить данные можно в личном кабинете на сайте.", { reply_markup: await menuFor(chat_id) });
+  }
+  const user = await getUser(chat_id);
+  const card: Record<string, unknown> = {};
+  if (user?.phone) card.phone = onlyDigits(user.phone).slice(-10); // если телефон уже знаем
+  await saveState(chat_id, { state: { step: "card_first", data: { card } } });
+  return sendMessage(
+    chat_id,
+    "Заполним медкарту 🪪 Это займёт минуту, и врач будет готов к вашему приёму.\n\n<b>Шаг 1.</b> Напишите ваше <b>имя</b>:",
+    { reply_markup: removeKeyboard },
+  );
+}
+
+// Сохранить заполненную медкарту в базу
+async function saveCard(chat_id: number, card: any) {
+  const row: Record<string, unknown> = {
+    phone: card.phone,
+    first_name: card.first_name ?? null,
+    last_name: card.last_name ?? null,
+    age: card.age ?? null,
+    gender: card.gender ?? null,
+    email: card.email ?? null,
+    diseases: card.diseases ?? null,
+    allergies: card.allergies ?? null,
+    surgeries: card.surgeries ?? null,
+    medications: card.medications ?? null,
+    telegram_chat_id: chat_id,
+    updated_at: new Date().toISOString(),
+  };
+  // upsert по телефону — это та же карта, что и в личном кабинете на сайте
+  const { error } = await db.from("patients").upsert(row, { onConflict: "phone" });
+  // запоминаем имя и телефон также в telegram_users
+  await saveState(chat_id, {
+    full_name: [card.first_name, card.last_name].filter(Boolean).join(" "),
+    phone: card.phone,
+    state: {},
+  });
+  if (error) {
+    return sendMessage(chat_id, "⚠️ Не удалось сохранить медкарту. Попробуйте позже.", { reply_markup: await menuFor(chat_id) });
+  }
+  const fio = [card.first_name, card.last_name].filter(Boolean).join(" ");
+  return sendMessage(
+    chat_id,
+    `✅ <b>Медкарта сохранена!</b>\n\n` +
+      `👤 ${fio}\n📞 +7${card.phone}\n🎂 Возраст: ${card.age}\n\n` +
+      `Спасибо! Теперь врач увидит вашу карту, когда вы запишетесь на приём. ` +
+      `Изменить данные всегда можно в личном кабинете на сайте.`,
+    { reply_markup: await menuFor(chat_id) },
+  );
+}
+
+// Обработка одного шага мастера (текстовые ответы)
+async function handleCardStep(chat_id: number, st: any, text: string) {
+  const card = st.data?.card ?? {};
+  const t = text.trim();
+
+  if (st.step === "card_first") {
+    if (t.length < 2) return sendMessage(chat_id, "Напишите имя текстом (минимум 2 буквы).");
+    card.first_name = t;
+    await saveState(chat_id, { state: { step: "card_last", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 2.</b> Ваша <b>фамилия</b>:");
+  }
+  if (st.step === "card_last") {
+    if (t.length < 2) return sendMessage(chat_id, "Напишите фамилию текстом.");
+    card.last_name = t;
+    if (card.phone) { // телефон уже знаем — пропускаем шаг 3
+      await saveState(chat_id, { state: { step: "card_age", data: { card } } });
+      return sendMessage(chat_id, "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?", { reply_markup: removeKeyboard });
+    }
+    await saveState(chat_id, { state: { step: "card_phone", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 3.</b> Ваш <b>номер телефона</b> — нажмите кнопку ниже или напишите номер:", { reply_markup: phoneKeyboard });
+  }
+  if (st.step === "card_phone") {
+    const digits = onlyDigits(t);
+    if (digits.length < 10) return sendMessage(chat_id, "Похоже, номер неполный. Напишите в формате +7XXXXXXXXXX или нажмите кнопку «Поделиться номером».", { reply_markup: phoneKeyboard });
+    card.phone = digits.slice(-10);
+    await saveState(chat_id, { state: { step: "card_age", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?", { reply_markup: removeKeyboard });
+  }
+  if (st.step === "card_age") {
+    const age = parseInt(onlyDigits(t), 10);
+    if (!age || age < 1 || age > 120) return sendMessage(chat_id, "Напишите возраст числом, например 35.");
+    card.age = age;
+    await saveState(chat_id, { state: { step: "card_gender", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 5.</b> Укажите ваш <b>пол</b>:", {
+      reply_markup: { inline_keyboard: [[
+        { text: "👨 Мужской", callback_data: "card_g:м" },
+        { text: "👩 Женский", callback_data: "card_g:ж" },
+      ]] },
+    });
+  }
+  if (st.step === "card_gender") {
+    return sendMessage(chat_id, "Пожалуйста, выберите пол кнопкой выше 👆");
+  }
+  if (st.step === "card_email") {
+    card.email = isSkip(t) ? null : t;
+    await saveState(chat_id, { state: { step: "card_diseases", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 7.</b> Хронические <b>болезни</b> и диагнозы (или «-», если нет):");
+  }
+  if (st.step === "card_diseases") {
+    card.diseases = isSkip(t) ? null : t;
+    await saveState(chat_id, { state: { step: "card_allergies", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 8.</b> <b>Аллергии</b> (или «-», если нет):");
+  }
+  if (st.step === "card_allergies") {
+    card.allergies = isSkip(t) ? null : t;
+    await saveState(chat_id, { state: { step: "card_surgeries", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 9.</b> Перенесённые <b>операции</b> (или «-», если не было):");
+  }
+  if (st.step === "card_surgeries") {
+    card.surgeries = isSkip(t) ? null : t;
+    await saveState(chat_id, { state: { step: "card_meds", data: { card } } });
+    return sendMessage(chat_id, "<b>Шаг 10.</b> Постоянные <b>лекарства</b> (или «-», если нет). Это последний вопрос:");
+  }
+  if (st.step === "card_meds") {
+    card.medications = isSkip(t) ? null : t;
+    return saveCard(chat_id, card);
+  }
+}
+
 // ---- ИИ-консультант по симптомам (как умный поиск на сайте) ----
 const URGENCY: Record<string, string> = {
   emergency: "⚠️ Похоже на срочную ситуацию. При острых симптомах звоните 103 (скорая помощь).",
@@ -390,13 +546,21 @@ async function handleUpdate(update: any) {
       );
     }
 
+    // Пол при заполнении медкарты
+    if (dataStr.startsWith("card_g:") && st.step === "card_gender") {
+      const card = st.data?.card ?? {};
+      card.gender = dataStr.slice(7); // "м" / "ж"
+      await saveState(chat_id, { state: { step: "card_email", data: { card } } });
+      return sendMessage(chat_id, "<b>Шаг 6.</b> Ваш <b>email</b> (по желанию). Напишите почту или отправьте «-», чтобы пропустить:");
+    }
+
     // Пользователь указал пол — запоминаем и продолжаем анализ отложенной жалобы
     if (dataStr.startsWith("sex:")) {
       const sex = dataStr.slice(4); // "male" или "female"
       const pending = st.step === "ask_sex" ? st.data?.pendingSymptom : null;
       await saveState(chat_id, { sex, state: {} });
       if (pending) return runSymptomAnalysis(chat_id, pending, sex);
-      return sendMessage(chat_id, "Спасибо! Опишите, что вас беспокоит, и я подскажу подходящего врача.", { reply_markup: mainMenu });
+      return sendMessage(chat_id, "Спасибо! Опишите, что вас беспокоит, и я подскажу подходящего врача.", { reply_markup: await menuFor(chat_id) });
     }
 
     if (dataStr === "cancel") {
@@ -445,19 +609,50 @@ async function handleUpdate(update: any) {
       st.data.phone = phone;
       return afterPhone(chat_id, st.data);
     }
+    // Поделился контактом на шаге телефона в мастере медкарты
+    if (st.step === "card_phone") {
+      const card = st.data?.card ?? {};
+      card.phone = phone.slice(-10);
+      await saveState(chat_id, { state: { step: "card_age", data: { card } } });
+      return sendMessage(chat_id, "<b>Шаг 4.</b> Сколько вам <b>полных лет</b>?", { reply_markup: removeKeyboard });
+    }
     // контакт прислали вне записи — просто запоминаем телефон,
     // чтобы связать с записью с сайта и слать подтверждения/напоминания
     await saveState(chat_id, { phone });
     return sendMessage(
       chat_id,
       "✅ Готово! Уведомления подключены. Если вы записывались на сайте этим номером — пришлём подтверждение и напоминания сюда.",
-      { reply_markup: mainMenu },
+      { reply_markup: await menuFor(chat_id) },
     );
   }
 
   // Нажата кнопка «Записаться» из главного меню
   if (text === BOOK_BTN) {
     return startBooking(chat_id, await getUser(chat_id));
+  }
+
+  // Нажата кнопка «Заполнить медкарту»
+  if (text === CARD_BTN) {
+    return startCard(chat_id);
+  }
+
+  // Нажата кнопка «Моя медкарта» — показываем краткую сводку
+  if (text === MYCARD_BTN) {
+    const p = await getPatientByChat(chat_id);
+    if (!cardFilled(p)) return startCard(chat_id);
+    const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
+    return sendMessage(
+      chat_id,
+      `🪪 <b>Ваша медкарта</b>\n\n` +
+        `👤 ${fio}\n📞 +7${p.phone}\n🎂 Возраст: ${p.age ?? "—"}\n` +
+        (p.gender ? `⚧ Пол: ${p.gender === "м" ? "мужской" : "женский"}\n` : "") +
+        (p.allergies ? `⚠️ Аллергии: ${p.allergies}\n` : "") +
+        (p.diseases ? `🩺 Болезни: ${p.diseases}\n` : "") +
+        (p.surgeries ? `🔪 Операции: ${p.surgeries}\n` : "") +
+        (p.medications ? `💊 Лекарства: ${p.medications}\n` : "") +
+        `\nИзменить данные можно в личном кабинете на сайте.`,
+      { reply_markup: await menuFor(chat_id) },
+    );
   }
 
   // Команда /start (возможно с параметром, например /start book со страницы сайта)
@@ -477,13 +672,19 @@ async function handleUpdate(update: any) {
     if (param === "book") {
       return startBooking(chat_id, await getUser(chat_id));
     }
+    // Узнаём пациента по Telegram ID — здороваемся по имени, если знаем
+    const patient = await getPatientByChat(chat_id);
+    const hello = cardFilled(patient) ? `Здравствуйте, ${patient.first_name}! 👋` : "Здравствуйте! 👋";
+    const cardLine = cardFilled(patient)
+      ? "Ваша медкарта уже заполнена — врач увидит её при записи. 💙"
+      : "Новым пациентам советуем нажать <b>«Заполнить медкарту»</b> — врач будет готов к вашему приёму.";
     return sendMessage(
       chat_id,
-      "Здравствуйте! 👋 Это бот клиники <b>«Здоровье»</b>.\n\n" +
-        "Я помогу записаться на приём к врачу за минуту и пришлю напоминания, чтобы вы не забыли о визите.\n\n" +
-        "Нажмите <b>«Записаться на приём»</b> ниже. А если вы уже записывались на сайте — нажмите " +
-        "<b>«Подключить уведомления»</b>, чтобы получать подтверждение и напоминания здесь.",
-      { reply_markup: mainMenu },
+      `${hello} Это бот клиники <b>«Здоровье»</b>.\n\n` +
+        "Я помогу записаться на приём за минуту и пришлю напоминания.\n" +
+        cardLine + "\n\n" +
+        "Выберите действие на кнопках ниже 👇",
+      { reply_markup: await menuFor(chat_id) },
     );
   }
 
@@ -505,9 +706,14 @@ async function handleUpdate(update: any) {
     return afterPhone(chat_id, st.data);
   }
 
+  // Шаги мастера заполнения медкарты
+  if (typeof st.step === "string" && st.step.startsWith("card_")) {
+    return handleCardStep(chat_id, st, text);
+  }
+
   // Пустое сообщение (стикер/фото без текста) — просим описать жалобу словами
   if (!text) {
-    return sendMessage(chat_id, "Опишите, пожалуйста, что вас беспокоит, текстом 🙂", { reply_markup: mainMenu });
+    return sendMessage(chat_id, "Опишите, пожалуйста, что вас беспокоит, текстом 🙂", { reply_markup: await menuFor(chat_id) });
   }
 
   // Короткие приветствия — здороваемся и предлагаем описать жалобу
@@ -516,7 +722,7 @@ async function handleUpdate(update: any) {
     return sendMessage(
       chat_id,
       "Здравствуйте! 👋 Опишите, что вас беспокоит (например: «болит низ живота» или «болит правая нога»), и я подскажу, к какому врачу обратиться. Или нажмите кнопку ниже, чтобы записаться.",
-      { reply_markup: mainMenu },
+      { reply_markup: await menuFor(chat_id) },
     );
   }
 

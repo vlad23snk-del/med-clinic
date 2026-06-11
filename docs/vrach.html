@@ -346,7 +346,7 @@
       }
 
       const fio = [p.first_name, p.last_name].filter(Boolean).join(" ");
-      const age = ageFrom(p.birth_date);
+      const age = ageFrom(p.birth_date) || (p.age ? p.age + " лет" : "");
       const birth = p.birth_date ? new Date(p.birth_date).toLocaleDateString("ru-RU") : "—";
       const mini = `<div class="mini">
         <div class="box"><div class="lbl">Возраст</div><div class="val">${age || "—"}</div></div>

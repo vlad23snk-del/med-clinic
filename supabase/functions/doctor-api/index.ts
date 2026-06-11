@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     if (!patient) return json({ ok: true, patient: null }); // карта ещё не заполнена
     const card = {
       first_name: patient.first_name, last_name: patient.last_name,
-      birth_date: patient.birth_date, gender: patient.gender, blood_type: patient.blood_type,
+      birth_date: patient.birth_date, age: patient.age, gender: patient.gender, blood_type: patient.blood_type,
       diseases: patient.diseases, allergies: patient.allergies,
       surgeries: patient.surgeries, medications: patient.medications, comments: patient.comments,
     };
