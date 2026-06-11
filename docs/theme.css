@@ -117,3 +117,16 @@ html[data-theme="dark"] .mrow .val { color: #c4d0e2 !important; }
 }
 .theme-toggle:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(15,45,90,.26); }
 html[data-theme="dark"] .theme-toggle { background: #16223c; color: #fbbf24; border-color: var(--line); }
+
+/* Кнопка смены языка — над кнопкой темы */
+.lang-toggle {
+  position: fixed; right: 18px; bottom: 80px; z-index: 9999;
+  min-width: 50px; height: 50px; padding: 0 14px; border-radius: 25px;
+  border: 1px solid var(--line);
+  background: #ffffff; color: #1f6bff; font-size: 15px; font-weight: 800; letter-spacing: .03em;
+  font-family: inherit; cursor: pointer; display: grid; place-items: center;
+  box-shadow: 0 8px 24px rgba(15,45,90,.18);
+  transition: transform .2s, box-shadow .2s, background .2s;
+}
+.lang-toggle:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(15,45,90,.26); }
+html[data-theme="dark"] .lang-toggle { background: #16223c; color: #7db4ff; border-color: var(--line); }
