@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Личный кабинет пациента медицинского центра «Здоровье»: вход по телефону, карточка клиента и история приёмов." />
+  <meta name="theme-color" content="#1f6bff" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231f6bff'/%3E%3Cpath d='M42 18h16v24h24v16H58v24H42V58H18V42h24z' fill='white'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="theme.css" />
   <script>(function(){try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light');}catch(e){}})();</script>
   <title>Личный кабинет — Клиника «Здоровье»</title>
@@ -99,11 +102,11 @@
       <div class="ch-buttons">
         <a class="ch tg" id="btnTg" target="_blank" rel="noopener" href="#" onclick="return telegramClick(event)">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
-          Войти с помощью Telegram
+          Войти через Telegram
         </a>
         <button class="ch wa" id="btnWa" onclick="requestCode('whatsapp')">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.9 4.43-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.27-1.38a9.9 9.9 0 004.77 1.22h.01c5.46 0 9.9-4.43 9.9-9.9 0-2.64-1.03-5.13-2.9-7C17.18 3.03 14.69 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.32-1.95 1.36-.5.04-.97.22-3.28-.68-2.77-1.09-4.5-3.93-4.64-4.11-.13-.18-1.1-1.46-1.1-2.79 0-1.33.7-1.98.95-2.25.24-.27.53-.34.71-.34l.5.01c.16.01.38-.06.59.45.24.58.81 2 .88 2.14.07.14.12.31.02.49-.09.18-.14.29-.27.45l-.41.48c-.13.13-.27.28-.12.54.16.27.69 1.14 1.49 1.85 1.02.91 1.88 1.2 2.15 1.33.27.13.42.11.58-.07.16-.18.67-.78.85-1.05.18-.27.36-.22.6-.13.24.09 1.55.73 1.81.86.27.13.45.2.51.31.07.11.07.63-.17 1.31z"/></svg>
-          Код в WhatsApp
+          Войти через WhatsApp
         </button>
       </div>
       <div class="msg" id="phoneMsg"></div>

@@ -114,8 +114,8 @@
     // Личный кабинет
     "👤 Личный кабинет ": "👤 My account",
     "Введите номер телефона — пришлём код для входа.": "Enter your phone number — we'll send a login code.",
-    "Номер телефона": "Phone number", "Войти с помощью Telegram": "Log in with Telegram",
-    "Код в WhatsApp": "Code via WhatsApp", "Введите код": "Enter the code",
+    "Номер телефона": "Phone number", "Войти через Telegram": "Log in with Telegram",
+    "Войти через WhatsApp": "Log in with WhatsApp", "Введите код": "Enter the code",
     "Мы отправили 6-значный код. Введите его ниже.": "We've sent a 6-digit code. Enter it below.",
     "Код из сообщения": "Code from the message", "Войти": "Log in", "← Изменить номер": "← Change number",
     "Карточка клиента": "Client card", "🪪 Основная информация": "🪪 Basic information",
