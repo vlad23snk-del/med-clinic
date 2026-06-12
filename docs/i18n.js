@@ -146,7 +146,8 @@
     "Войти в админ-панель": "Log in to admin panel",
     "Кабинет врача": "Doctor's office", "Для каждого врача — свой профиль и свои пациенты.":
       "For each doctor — their own profile and patients.",
-    "Выберите себя": "Select yourself", "Личный пароль": "Personal password",
+    "Выберите себя": "Select yourself", "— Выберите себя —": "— Select yourself —",
+    "Личный пароль": "Personal password",
     "Войти в кабинет врача": "Log in to doctor's office", "Загрузка списка…": "Loading list…",
     "— Выберите специалиста —": "— Select a specialist —",
     "Вход для сотрудников ": "Staff login",
@@ -170,7 +171,139 @@
     "🪪 Открыть карточку": "🪪 Open client card", "Проверяем…": "Checking…",
     "Сохраняем…": "Saving…", "✅ Сохранено": "✅ Saved", "Отправляем код…": "Sending code…",
     "Неверный пароль": "Wrong password", "время уточняется": "time to be confirmed",
-    "Пол:": "Gender:", "Возраст:": "Age:", "Аллергии:": "Allergies:"
+    "Пол:": "Gender:", "Возраст:": "Age:", "Аллергии:": "Allergies:",
+
+    // ---- Динамический контент карточек (врачи и услуги из базы данных) ----
+    // Кнопки и пустые состояния
+    "Подробнее о враче →": "More about the doctor →",
+    "Никого не нашли. Попробуйте изменить запрос.": "No one found. Try changing your search.",
+    "Ничего не найдено. Попробуйте изменить запрос.": "Nothing found. Try changing your search.",
+    "Записаться": "Book", "уточняется": "to be confirmed",
+
+    // Имена врачей (транслитерация)
+    "Иванов И.И.": "Ivanov I.I.", "Петров П.П.": "Petrov P.P.", "Сидорова А.А.": "Sidorova A.A.",
+    "Смирнова Е.В.": "Smirnova E.V.", "Авдеев В.Г.": "Avdeev V.G.", "Григорьев А.С.": "Grigoriev A.S.",
+    "Афанасьев С.Н.": "Afanasiev S.N.", "Лобанов Л.В.": "Lobanov L.V.", "Ушакова Е.С.": "Ushakova E.S.",
+    "Швецова О.Ю.": "Shvetsova O.Yu.", "Фролов А.В.": "Frolov A.V.", "Романенко А.В.": "Romanenko A.V.",
+    "Фурман Л.С.": "Furman L.S.", "Войс Д.М.": "Voys D.M.", "Зайцева А.М.": "Zaytseva A.M.",
+    "Урбан Н.Ф.": "Urban N.F.", "Шаповалов Т.А.": "Shapovalov T.A.", "Свищева Л.И.": "Svishcheva L.I.",
+    "Ахметова В.И.": "Akhmetova V.I.", "Герасимова Н.П.": "Gerasimova N.P.", "Липов Р.О.": "Lipov R.O.",
+    "Попов Е.А.": "Popov E.A.", "Демин И.С.": "Demin I.S.",
+
+    // Специальности
+    "Стоматолог": "Dentist", "ЛОР": "ENT", "Терапевт": "General practitioner", "Окулист": "Ophthalmologist",
+    "Психиатр": "Psychiatrist", "Хирург": "Surgeon", "МРТ": "MRI", "Кардиолог": "Cardiologist",
+    "Дерматолог": "Dermatologist", "Эндокринолог": "Endocrinologist", "Проктолог": "Proctologist",
+    "Уролог": "Urologist", "Гинеколог": "Gynecologist", "Невролог": "Neurologist",
+    "Нейрохирург": "Neurosurgeon", "Маммолог": "Mammologist", "Пульмонолог": "Pulmonologist",
+    "Рентгенолог": "Radiologist", "Сурдолог": "Audiologist", "Ревматолог": "Rheumatologist",
+    "Фтизиатр": "Phthisiatrician", "Эндоскопист": "Endoscopist",
+
+    // Описания специалистов
+    "Лечение и удаление зубов, профилактика кариеса, чистка и пломбирование. Помогает при зубной боли и воспалении дёсен.":
+      "Treatment and extraction of teeth, cavity prevention, cleaning and fillings. Helps with toothache and gum inflammation.",
+    "Заболевания уха, горла и носа: насморк, отит, боль в горле, гайморит, заложенность и снижение слуха.":
+      "Ear, nose and throat conditions: runny nose, otitis, sore throat, sinusitis, congestion and hearing loss.",
+    "Первый врач при общем недомогании: температура, простуда, слабость, кашель. Ставит диагноз и направляет к узким специалистам.":
+      "The first doctor for general illness: fever, cold, weakness, cough. Makes a diagnosis and refers to specialists.",
+    "Проверка зрения и лечение заболеваний глаз: сухость, покраснение, снижение зрения, подбор очков и линз.":
+      "Vision testing and treatment of eye conditions: dryness, redness, declining vision, fitting of glasses and lenses.",
+    "Помощь при тревоге, депрессии, бессоннице, панических атаках, выгорании и перепадах настроения.":
+      "Help with anxiety, depression, insomnia, panic attacks, burnout and mood swings.",
+    "Осмотр и лечение травм, ран, воспалений и гнойных процессов, малые хирургические манипуляции.":
+      "Examination and treatment of injuries, wounds, inflammations and abscesses; minor surgical procedures.",
+    "Магнитно-резонансная томография позвоночника, суставов, мозга и внутренних органов для точной диагностики.":
+      "Magnetic resonance imaging of the spine, joints, brain and internal organs for accurate diagnosis.",
+    "Диагностика и лечение сердца и сосудов: давление, аритмия, боль в груди, одышка, ЭКГ.":
+      "Diagnosis and treatment of the heart and vessels: blood pressure, arrhythmia, chest pain, shortness of breath, ECG.",
+    "Лечение кожи: высыпания, акне, зуд, аллергия, родинки и другие кожные проблемы.":
+      "Skin treatment: rashes, acne, itching, allergies, moles and other skin problems.",
+    "Гормоны и обмен веществ: щитовидная железа, сахарный диабет, лишний вес, гормональные нарушения.":
+      "Hormones and metabolism: thyroid, diabetes, excess weight, hormonal disorders.",
+    "Диагностика и лечение заболеваний кишечника и прямой кишки.":
+      "Diagnosis and treatment of intestinal and rectal conditions.",
+    "Лечение мочеполовой системы: почки, мочевой пузырь, мужское здоровье.":
+      "Treatment of the urogenital system: kidneys, bladder, men's health.",
+    "Женское здоровье: профилактические осмотры, диагностика и наблюдение.":
+      "Women's health: preventive check-ups, diagnosis and monitoring.",
+    "Лечение нервной системы: головные боли, мигрень, онемение, защемления, головокружения.":
+      "Treatment of the nervous system: headaches, migraine, numbness, pinched nerves, dizziness.",
+    "Консультации по заболеваниям мозга, позвоночника и нервной системы, требующим хирургии.":
+      "Consultations on brain, spine and nervous system conditions requiring surgery.",
+    "Диагностика и профилактика заболеваний молочных желёз.":
+      "Diagnosis and prevention of breast diseases.",
+    "Лечение органов дыхания: бронхит, астма, кашель, одышка, заболевания лёгких.":
+      "Treatment of the respiratory system: bronchitis, asthma, cough, shortness of breath, lung diseases.",
+    "Рентгенография и расшифровка снимков для диагностики травм и заболеваний.":
+      "X-ray imaging and scan interpretation for diagnosing injuries and diseases.",
+    "Проверка слуха, диагностика его снижения и подбор решений для слуха.":
+      "Hearing tests, diagnosis of hearing loss and selection of hearing solutions.",
+    "Лечение суставов и соединительной ткани: боли в суставах, артрит, воспаления.":
+      "Treatment of joints and connective tissue: joint pain, arthritis, inflammation.",
+    "Диагностика и лечение туберкулёза и других специфических заболеваний лёгких.":
+      "Diagnosis and treatment of tuberculosis and other specific lung diseases.",
+    "Эндоскопические обследования для точной диагностики внутренних органов.":
+      "Endoscopic examinations for accurate diagnosis of internal organs.",
+
+    // Названия услуг
+    "Аноскопия": "Anoscopy", "Бронхоскопия": "Bronchoscopy", "Вакцинация": "Vaccination",
+    "Ведение беременности (консультация)": "Pregnancy management (consultation)",
+    "Ведение бронхиальной астмы": "Bronchial asthma management",
+    "Внутрисуставная инъекция": "Intra-articular injection", "Вскрытие абсцесса": "Abscess drainage",
+    "Гастроскопия (ФГДС)": "Gastroscopy (EGD)", "Гормональная диагностика": "Hormonal diagnostics",
+    "Дерматоскопия родинок": "Mole dermatoscopy", "Диагностика артрита": "Arthritis diagnostics",
+    "Диагностика грыж позвоночника": "Spinal hernia diagnostics",
+    "Диагностика затяжного кашля": "Persistent cough diagnostics",
+    "Диагностика мужского здоровья": "Men's health diagnostics",
+    "Диагностика новообразований": "Tumor diagnostics",
+    "Диагностика остеохондроза": "Osteochondrosis diagnostics",
+    "Диагностика тревожных расстройств": "Anxiety disorder diagnostics",
+    "Диагностика туберкулёза": "Tuberculosis diagnostics", "Диагностика тугоухости": "Hearing loss diagnostics",
+    "Измерение внутриглазного давления": "Intraocular pressure measurement",
+    "Колоноскопия": "Colonoscopy", "Кольпоскопия": "Colposcopy", "Консультация ЛОР-врача": "ENT consultation",
+    "Консультация гинеколога": "Gynecologist consultation", "Консультация дерматолога": "Dermatologist consultation",
+    "Консультация кардиолога": "Cardiologist consultation", "Консультация маммолога": "Mammologist consultation",
+    "Консультация невролога": "Neurologist consultation", "Консультация нейрохирурга": "Neurosurgeon consultation",
+    "Консультация перед эндоскопией": "Pre-endoscopy consultation",
+    "Консультация по болям в спине": "Back pain consultation", "Консультация проктолога": "Proctologist consultation",
+    "Консультация психиатра": "Psychiatrist consultation", "Консультация пульмонолога": "Pulmonologist consultation",
+    "Консультация ревматолога": "Rheumatologist consultation", "Консультация стоматолога": "Dentist consultation",
+    "Консультация сурдолога": "Audiologist consultation", "Консультация уролога": "Urologist consultation",
+    "Консультация фтизиатра": "Phthisiatrician consultation", "Консультация хирурга": "Surgeon consultation",
+    "Консультация эндокринолога": "Endocrinologist consultation",
+    "Контроль артериального давления": "Blood pressure monitoring", "Контроль сахарного диабета": "Diabetes monitoring",
+    "Контроль терапии": "Therapy monitoring", "Лечение акне": "Acne treatment",
+    "Лечение аллергических высыпаний": "Allergic rash treatment", "Лечение бессонницы": "Insomnia treatment",
+    "Лечение боли в горле": "Sore throat treatment", "Лечение бронхита": "Bronchitis treatment",
+    "Лечение геморроя": "Hemorrhoid treatment", "Лечение кариеса": "Cavity treatment",
+    "Лечение конъюнктивита": "Conjunctivitis treatment", "Лечение мигрени": "Migraine treatment",
+    "Лечение неврозов и бессонницы": "Neurosis and insomnia treatment", "Лечение отита": "Otitis treatment",
+    "Лечение суставов": "Joint treatment", "Лечение цистита": "Cystitis treatment",
+    "МРТ брюшной полости": "Abdominal MRI", "МРТ головного мозга": "Brain MRI",
+    "МРТ позвоночника": "Spine MRI", "МРТ суставов": "Joint MRI", "Обработка раны": "Wound care",
+    "Описание маммографии": "Mammography reading", "Описание результатов": "Results interpretation",
+    "Описание рентгена лёгких": "Chest X-ray reading", "Описание снимков МРТ": "MRI scan reading",
+    "Осмотр глазного дна": "Fundus examination", "Отбеливание зубов": "Teeth whitening",
+    "Оформление больничного листа": "Sick leave certificate",
+    "Оценка показаний к операции": "Surgery indication assessment",
+    "Оценка состояния после травм": "Post-injury assessment", "Первичная консультация": "Initial consultation",
+    "Перевязка": "Dressing change", "Пломбирование": "Filling", "Повторная консультация": "Follow-up consultation",
+    "Подбор очков и линз": "Glasses and lens fitting", "Подбор слухового аппарата": "Hearing aid fitting",
+    "Подбор терапии": "Treatment selection", "Послеоперационное наблюдение": "Post-operative monitoring",
+    "Проба Манту / Диаскинтест": "Mantoux test / Diaskintest", "Проверка остроты зрения": "Visual acuity test",
+    "Проверка слуха (аудиометрия)": "Hearing test (audiometry)", "Программа коррекции веса": "Weight correction program",
+    "Промывание носа": "Nasal lavage", "Профессиональная чистка зубов": "Professional teeth cleaning",
+    "Профилактический осмотр": "Preventive check-up", "Психотерапевтическая беседа": "Psychotherapy session",
+    "Расшифровка анализов": "Test results interpretation", "Расшифровка снимков": "Scan interpretation",
+    "Рентген грудной клетки": "Chest X-ray", "Рентген костей и суставов": "Bone and joint X-ray",
+    "Рентген позвоночника": "Spine X-ray", "Спирометрия (дыхательный тест)": "Spirometry (breathing test)",
+    "Суточный мониторинг ЭКГ (Холтер)": "24-hour ECG monitoring (Holter)",
+    "УЗИ молочных желёз": "Breast ultrasound", "УЗИ органов малого таза": "Pelvic ultrasound",
+    "УЗИ почек и мочевого пузыря": "Kidney and bladder ultrasound", "УЗИ сердца (Эхо-КГ)": "Heart ultrasound (Echo)",
+    "УЗИ щитовидной железы": "Thyroid ultrasound", "Удаление бородавок": "Wart removal",
+    "Удаление зуба": "Tooth extraction", "Удаление новообразований кожи": "Skin tumor removal",
+    "Удаление полипов": "Polyp removal", "Удаление серной пробки": "Earwax removal",
+    "Удаление серных пробок": "Earwax removal", "Флюорография": "Fluorography", "ЭКГ": "ECG"
   };
 
   var ATTRS = ["placeholder", "title", "aria-label", "alt"];
@@ -182,11 +315,33 @@
   var origAttr = new WeakMap();   // элемент → { attr: исходный текст }
   var origTitle = null;
 
+  // Фрагментные правила — для строк с числами, которые нельзя занести в словарь
+  // целиком (счётчики, цены, длительность). Применяются, только если строки нет
+  // в словаре. Подстрочная замена, безопасна для уже переведённого контента.
+  var FRAG = [
+    ["Найдено специалистов:", "Specialists found:"],
+    ["Найдено услуг:", "Services found:"],
+    ["уточняется", "to be confirmed"],
+    [" мин", " min"],
+    ["от ", "from "]
+  ];
+
   function translateString(s) {
     var k = s.trim();
     if (!k) return s;
     var en = EN[k];
-    return en ? s.replace(k, en) : s;
+    if (en) return s.replace(k, en);
+    // Имя врача с эмодзи-префиксом (карточки услуг: "👨‍⚕️ Зайцева А.М.")
+    var pfx = "👨‍⚕️ ";
+    if (k.indexOf(pfx) === 0) {
+      var rest = k.slice(pfx.length).trim();
+      if (EN[rest]) return s.replace(rest, EN[rest]);
+    }
+    var out = s, changed = false;
+    for (var i = 0; i < FRAG.length; i++) {
+      if (out.indexOf(FRAG[i][0]) !== -1) { out = out.split(FRAG[i][0]).join(FRAG[i][1]); changed = true; }
+    }
+    return changed ? out : s;
   }
 
   function applyTextNode(node, toEn) {
