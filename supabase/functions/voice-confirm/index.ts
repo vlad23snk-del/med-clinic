@@ -19,7 +19,7 @@ const OPENAI_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const TZ_OFFSET = "+03:00";
-const CLINIC_PHONE = "8 800 123 45 67";
+const CLINIC_PHONE = "телефон клиники"; // ЗАГЛУШКА — впишите номер клиники
 
 const db = createClient(SUPABASE_URL, SERVICE_KEY);
 const MON = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];

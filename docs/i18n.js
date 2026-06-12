@@ -94,10 +94,10 @@
       "Contraindications exist. Consult a specialist.",
     "© 2026 Медицинский центр «Здоровье»": "© 2026 Zdorovie Medical Center",
     "© 2026 Медицинский центр «Здоровье». Все права защищены.": "© 2026 Zdorovie Medical Center. All rights reserved.",
-    "г. Москва, ул. Здоровья, д. 1": "Moscow, Zdorovya St., 1",
-    "📍 г. Москва, ул. Здоровья, д. 1": "📍 Moscow, Zdorovya St., 1",
-    "🗺️ г. Москва, ул. Здоровья, д. 1": "🗺️ Moscow, Zdorovya St., 1",
-    "Пн–Вс: 8:00 – 21:00": "Mon–Sun: 8:00 – 21:00", "🕒 Пн–Вс: 8:00 – 21:00": "🕒 Mon–Sun: 8:00 – 21:00",
+    "Адрес клиники": "Clinic address", "📍 Адрес клиники": "📍 Clinic address", "🗺️ Адрес клиники": "🗺️ Clinic address",
+    "Телефон клиники": "Clinic phone", "📞 Телефон клиники": "📞 Clinic phone",
+    "E-mail клиники": "Clinic e-mail", "✉️ E-mail клиники": "✉️ Clinic e-mail",
+    "Часы работы клиники": "Clinic hours", "🕒 Часы работы клиники": "🕒 Clinic hours",
     "🔐 Вход для владельцев или для врачей →": "🔐 Login for owners or doctors →",
 
     // Врачи / услуги

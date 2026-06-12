@@ -80,8 +80,8 @@ const STR: Record<string, string> = {
   "К какому специалисту хотите записаться?": "Which specialist would you like to book?",
   "Выберите удобную дату приёма:": "Choose a convenient appointment date:",
   "Выберите удобное время:": "Choose a convenient time:",
-  "⚠️ Не удалось сохранить запись. Попробуйте ещё раз позже или позвоните: 8 800 123-45-67.":
-    "⚠️ Could not save the appointment. Please try again later or call: 8 800 123-45-67.",
+  "⚠️ Не удалось сохранить запись. Попробуйте ещё раз позже или позвоните в клинику.":
+    "⚠️ Could not save the appointment. Please try again later or call the clinic.",
   "Запись отменена. Если что — нажмите /start, чтобы начать заново.":
     "Appointment cancelled. If needed, tap /start to begin again.",
   "🔎 Анализирую вашу жалобу…": "🔎 Analyzing your symptoms…",
@@ -390,7 +390,7 @@ async function finishBooking(chat_id: number, data: any) {
   });
 
   if (error) {
-    await sendMessage(chat_id, "⚠️ Не удалось сохранить запись. Попробуйте ещё раз позже или позвоните: 8 800 123-45-67.");
+    await sendMessage(chat_id, "⚠️ Не удалось сохранить запись. Попробуйте ещё раз позже или позвоните в клинику.");
     return;
   }
 
@@ -398,9 +398,9 @@ async function finishBooking(chat_id: number, data: any) {
   const human = `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}, ${data.time}`;
   const done = CURRENT_LANG === "en"
     ? `✅ <b>Done! You're booked.</b>\n\n🩺 Specialist: <b>${data.specialty}</b>\n📅 When: <b>${human}</b>\n\n` +
-      `We'll remind you <b>a day</b> and <b>an hour</b> before.\nIf your plans change, call: 8 800 123-45-67.\n\nStay healthy! 💙`
+      `We'll remind you <b>a day</b> and <b>an hour</b> before.\nIf your plans change, call the clinic.\n\nStay healthy! 💙`
     : `✅ <b>Готово! Вы записаны.</b>\n\n🩺 Специалист: <b>${data.specialty}</b>\n📅 Когда: <b>${human}</b>\n\n` +
-      `Мы напомним вам <b>за день</b> и <b>за час</b> до приёма.\nЕсли планы изменятся — позвоните: 8 800 123-45-67.\n\nБудьте здоровы! 💙`;
+      `Мы напомним вам <b>за день</b> и <b>за час</b> до приёма.\nЕсли планы изменятся — позвоните в клинику.\n\nБудьте здоровы! 💙`;
   await sendMessage(chat_id, done, { reply_markup: removeKeyboard });
 }
 
